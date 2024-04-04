@@ -2,7 +2,7 @@ use std::{ops::Range, rc::Rc, sync::Arc, vec};
 
 use crate::{
     make_shader_source, rgba_bind_group_layout_cached,
-    shader_source::{ShaderCache, ShaderFile},
+    shader::{ShaderCache, ShaderFile},
     utils::rc_addr_as_u64,
     Aabb, BindableTexture, Camera3d, Camera3dGR, Color, GraphicsContext, GrowableBuffer, HotReload,
     RenderFormat, ShaderSource, ToRaw, Transform, TransformRaw, VertexT, VertsLayout,
@@ -33,16 +33,16 @@ impl Default for AlphaSdfParams {
     }
 }
 
+const SHADER_SOURCE: ShaderSource = make_shader_source!("alpha_sdf.wgsl", "sdf_sprite.wgsl");
 /// Immediate Mode batches Sprite Rendering.
 pub struct SdfSpriteRenderer {
     instances: Vec<SpriteRaw>,
     instance_buffer: GrowableBuffer<SpriteRaw>,
     batches: Vec<SpriteBatch>,
     ctx: GraphicsContext,
-    shader_source: ShaderSource,
     render_format: RenderFormat,
     pipeline: RenderPipeline,
-    camera_bind_group: Arc<wgpu::BindGroupLayout>,
+    camera_layout: Arc<wgpu::BindGroupLayout>,
 }
 
 impl SdfSpriteRenderer {
@@ -54,12 +54,10 @@ impl SdfSpriteRenderer {
     ) -> Self {
         let ctx = ctx.clone();
         let instance_buffer = GrowableBuffer::new(&ctx.device, 32, BufferUsages::VERTEX);
+        let shader = cache.register(SHADER_SOURCE);
 
-        let shader_source = make_shader_source!("alpha_sdf.wgsl", "sdf_sprite.wgsl");
-        let shader = cache.register(shader_source);
-
-        let camera_bind_group = camera.bind_group_layout().clone();
-        let pipeline = create_pipeline(&shader, &ctx.device, &camera_bind_group, render_format);
+        let camera_layout = camera.bind_group_layout().clone();
+        let pipeline = create_pipeline(&shader, &ctx.device, &camera_layout, render_format);
 
         SdfSpriteRenderer {
             instances: vec![],
@@ -68,8 +66,7 @@ impl SdfSpriteRenderer {
             ctx,
             pipeline,
             render_format,
-            shader_source,
-            camera_bind_group,
+            camera_layout,
         }
     }
 
@@ -95,15 +92,15 @@ impl SdfSpriteRenderer {
 }
 
 impl HotReload for SdfSpriteRenderer {
-    fn source(&self) -> &ShaderSource {
-        &self.shader_source
+    fn source(&self) -> ShaderSource {
+        SHADER_SOURCE
     }
 
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
         self.pipeline = create_pipeline(
             shader,
             &self.ctx.device,
-            &self.camera_bind_group,
+            &self.camera_layout,
             self.render_format,
         )
     }
@@ -219,11 +216,11 @@ impl ToRaw for SdfSprite {
 fn create_pipeline(
     shader: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera_bind_group: &BindGroupLayout,
+    camera_layout: &BindGroupLayout,
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     let bind_group_layouts = &[
-        camera_bind_group,
+        camera_layout,
         rgba_bind_group_layout_cached(device), // texture
     ];
 

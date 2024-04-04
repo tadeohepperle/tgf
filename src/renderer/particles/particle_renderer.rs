@@ -2,19 +2,20 @@ use std::sync::Arc;
 
 use crate::{
     make_shader_source, rgba_bind_group_layout_cached, texture::white_px_texture_cached,
-    BindableTexture, Camera3dGR, GraphicsContext, RenderFormat, ShaderCache, ShaderSource, ToRaw,
-    Transform, TransformRaw, VertsLayout,
+    BindableTexture, Camera3dGR, GraphicsContext, HotReload, RenderFormat, ShaderCache,
+    ShaderSource, ToRaw, Transform, TransformRaw, VertsLayout,
 };
 use wgpu::{util::RenderEncoder, RenderPass, ShaderStages};
 
 use super::{ParticleSystem, RawParticle};
 
+const SHADER_SOURCE: ShaderSource = make_shader_source!("particle.wgsl");
+
 pub struct ParticleRenderer {
     pipeline: wgpu::RenderPipeline,
-    shader_source: ShaderSource,
     render_format: RenderFormat,
     ctx: GraphicsContext,
-    camera_bind_group: Arc<wgpu::BindGroupLayout>,
+    camera_layout: Arc<wgpu::BindGroupLayout>,
 }
 
 impl ParticleRenderer {
@@ -25,18 +26,15 @@ impl ParticleRenderer {
         cache: &mut ShaderCache,
     ) -> ParticleRenderer {
         let ctx = ctx.clone();
-
-        let shader_source = make_shader_source!("particle.wgsl");
-        let shader = cache.register(shader_source);
+        let shader = cache.register(SHADER_SOURCE);
         let pipeline = create_pipeline(&shader, &ctx, camera.bind_group_layout(), render_format);
-        let camera_bind_group = camera.bind_group_layout().clone();
+        let camera_layout = camera.bind_group_layout().clone();
 
         ParticleRenderer {
             pipeline,
-            shader_source,
             render_format,
             ctx,
-            camera_bind_group,
+            camera_layout,
         }
     }
 
@@ -66,17 +64,14 @@ impl ParticleRenderer {
 fn create_pipeline(
     shader: &wgpu::ShaderModule,
     ctx: &GraphicsContext,
-    camera_bind_group: &wgpu::BindGroupLayout,
+    camera_layout: &wgpu::BindGroupLayout,
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     let layout = ctx
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("particles pipeline"),
-            bind_group_layouts: &[
-                camera_bind_group,
-                rgba_bind_group_layout_cached(&ctx.device),
-            ],
+            bind_group_layouts: &[camera_layout, rgba_bind_group_layout_cached(&ctx.device)],
             push_constant_ranges: &[wgpu::PushConstantRange {
                 stages: wgpu::ShaderStages::VERTEX,
                 range: 0..std::mem::size_of::<TransformRaw>() as u32,
@@ -125,4 +120,14 @@ fn create_pipeline(
             },
             multiview: None,
         })
+}
+
+impl HotReload for ParticleRenderer {
+    fn source(&self) -> ShaderSource {
+        SHADER_SOURCE
+    }
+
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
+        self.pipeline = create_pipeline(shader, &self.ctx, &self.camera_layout, self.render_format);
+    }
 }

@@ -1,37 +1,62 @@
+use std::sync::Arc;
+
 use glam::vec3;
 use glam::Vec3;
+use wgpu::BindGroupLayout;
 use wgpu::BufferUsages;
 use wgpu::FragmentState;
 use wgpu::PrimitiveState;
 use wgpu::ShaderModuleDescriptor;
 use wgpu::VertexState;
 
+use crate::make_shader_source;
 use crate::Camera3dGR;
 use crate::Color;
 use crate::GraphicsContext;
 use crate::GrowableBuffer;
+use crate::HotReload;
+use crate::ShaderCache;
+use crate::ShaderSource;
 use crate::VertexT;
 use crate::VertsLayout;
 
 use super::RenderFormat;
+
+const SHADER_SOURCE: ShaderSource = make_shader_source!("gizmos.wgsl");
 
 pub struct Gizmos {
     /// immediate vertices, written to vertex_buffer every frame.
     vertex_queue: Vec<Vertex>,
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: GrowableBuffer<Vertex>,
+    camera_layout: Arc<wgpu::BindGroupLayout>,
     ctx: GraphicsContext,
+    render_format: RenderFormat,
 }
 
 impl Gizmos {
-    pub fn new(ctx: &GraphicsContext, camera: &Camera3dGR, render_format: RenderFormat) -> Self {
+    pub fn new(
+        ctx: &GraphicsContext,
+        camera: &Camera3dGR,
+        render_format: RenderFormat,
+        shader_cache: &mut ShaderCache,
+    ) -> Self {
         let vertex_buffer = GrowableBuffer::new(&ctx.device, 256, BufferUsages::VERTEX);
-        let pipeline = create_pipeline(&ctx.device, camera, render_format);
+
+        let shader = shader_cache.register(SHADER_SOURCE);
+        let pipeline = create_pipeline(
+            &shader,
+            &ctx.device,
+            camera.bind_group_layout(),
+            render_format,
+        );
         Gizmos {
             pipeline,
             vertex_queue: vec![],
             vertex_buffer,
             ctx: ctx.clone(),
+            camera_layout: camera.bind_group_layout().clone(),
+            render_format,
         }
     }
 
@@ -134,6 +159,21 @@ impl Gizmos {
     }
 }
 
+impl HotReload for Gizmos {
+    fn source(&self) -> ShaderSource {
+        SHADER_SOURCE
+    }
+
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
+        self.pipeline = create_pipeline(
+            shader,
+            &self.ctx.device,
+            &self.camera_layout,
+            self.render_format,
+        );
+    }
+}
+
 // /////////////////////////////////////////////////////////////////////////////
 // Renderer
 // /////////////////////////////////////////////////////////////////////////////
@@ -151,22 +191,17 @@ impl VertexT for Vertex {
 }
 
 fn create_pipeline(
+    shader: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera: &Camera3dGR,
+    camera_layout: &wgpu::BindGroupLayout,
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     let label = "Gizmos";
-
-    let shader = device.create_shader_module(ShaderModuleDescriptor {
-        label: Some(&format!("{label} ShaderModule")),
-        source: wgpu::ShaderSource::Wgsl(include_str!("gizmos.wgsl").into()),
-    });
-
     let vertexes = VertsLayout::new().vertex::<Vertex>();
 
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(&format!("{label} PipelineLayout")),
-        bind_group_layouts: &[camera.bind_group_layout()],
+        bind_group_layouts: &[camera_layout],
         push_constant_ranges: &[],
     });
 

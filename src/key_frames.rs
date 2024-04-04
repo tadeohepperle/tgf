@@ -77,7 +77,7 @@ impl<T: Clone + Lerp> KeyFrames<T> {
 macro_rules! key_frames {
     ($($t:expr => $v:expr),+) => {
       {
-        use coal_core::key_frames::{Easing, KeyFrames};
+        use $crate::key_frames::{Easing, KeyFrames};
         let frames = smallvec::smallvec![$(($t, $v, Easing::Linear )),+];
         KeyFrames::new(frames)
       }
@@ -115,7 +115,6 @@ mod tests {
 
     #[test]
     fn test_macro() {
-        use crate as coal_core;
         let frames = key_frames!(0.0 => -5.0, 3.0 => -10.0, 4.0 => 20.0);
         assert_eq!(frames.get(-22.0), -5.0);
         assert_eq!(frames.get(5.0), 20.0);

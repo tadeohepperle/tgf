@@ -8,6 +8,8 @@ pub mod particles;
 pub mod screen_textures;
 pub mod sdf_sprite;
 pub mod tone_mapping;
+pub mod ui_3d;
+pub mod ui_screen;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RenderFormat {

@@ -8,6 +8,7 @@ pub mod camera3d;
 pub mod asset;
 pub mod bucket_array;
 pub mod color;
+pub mod default_world;
 pub mod graphics_context;
 pub mod immediate_geometry;
 pub mod input;
@@ -16,10 +17,11 @@ pub mod lerp;
 pub mod rect;
 pub mod renderer;
 pub mod screen;
-pub mod shader_source;
+pub mod shader;
 pub mod texture;
 pub mod time;
 pub mod transform;
+pub mod ui;
 pub mod utils;
 pub mod vertex;
 pub mod watcher;
@@ -36,9 +38,9 @@ pub use renderer::{
     bloom::{Bloom, BloomSettings, BloomTextures},
     gizmos::Gizmos,
     particles::{ParticleRenderer, ParticleSystem, ParticleSystemT, RawParticle},
-    screen_textures::{DepthTexture, HdrTexture, ScreenTextures, ScreenVertexShader},
+    screen_textures::{DepthTexture, HdrTexture, ScreenTextures},
     sdf_sprite::{AlphaSdfParams, SdfSprite, SdfSpriteRenderer},
-    tone_mapping::AcesToneMapping,
+    tone_mapping::ToneMapping,
     RenderFormat,
 };
 
@@ -48,6 +50,7 @@ pub use bucket_array::BucketArray;
 pub use buffer::{GrowableBuffer, IndexBuffer, InstanceBuffer, ToRaw, UniformBuffer, VertexBuffer};
 pub use camera3d::{Camera3DTransform, Camera3d, Camera3dGR, Camera3dRaw, Projection, Ray};
 pub use color::Color;
+pub use default_world::DefaultWorld;
 pub use graphics_context::{GraphicsContext, GraphicsContextConfig};
 pub use immediate_geometry::{ImmediateMeshQueue, ImmediateMeshRanges};
 pub use input::{Input, KeyState, MouseButton, MouseButtonState, PressState};
@@ -56,7 +59,7 @@ pub use lerp::{Lerp, Lerped};
 pub use rect::{Aabb, Rect};
 pub use renderer::color_mesh::ColorMeshRenderer;
 pub use screen::{Screen, ScreenGR, ScreenRaw};
-pub use shader_source::{HotReload, ShaderCache, ShaderFile, ShaderSource};
+pub use shader::{HotReload, ShaderCache, ShaderFile, ShaderSource};
 pub use texture::{
     create_white_px_texture, rgba_bind_group_layout_cached, rgba_bind_group_layout_msaa4_cached,
     BindableTexture, Texture,

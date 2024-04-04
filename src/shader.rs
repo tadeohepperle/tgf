@@ -20,17 +20,18 @@ impl ShaderSource {}
 #[macro_export]
 macro_rules! make_shader_source {
     ($($file:literal),+) => {{
-        ShaderSource{
+        $crate::ShaderSource{
              files: &[$(   $crate::ShaderFile { wgsl: include_str!($file), file: $file, }    ),+]
         }
     }};
 }
 
 pub trait HotReload {
-    fn source(&self) -> &ShaderSource;
+    fn source(&self) -> ShaderSource;
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule);
 }
 
+#[derive(Debug)]
 pub struct ShaderCache {
     ctx: GraphicsContext,
     /// maps each file to the current wgsl content.
@@ -41,9 +42,9 @@ pub struct ShaderCache {
 }
 
 impl ShaderCache {
-    pub fn new(ctx: GraphicsContext, hot_reload_shaders_dir: Option<&'static str>) -> Self {
+    pub fn new(ctx: &GraphicsContext, hot_reload_shaders_dir: Option<&'static str>) -> Self {
         ShaderCache {
-            ctx,
+            ctx: ctx.clone(),
             current_wgsl: HashMap::new(),
             module_cache: HashMap::new(),
             hot_reload_watcher: if let Some(dir) = hot_reload_shaders_dir {
@@ -63,12 +64,16 @@ impl ShaderCache {
 
         // combine the files into one wgsl string to generate (or get the cached) shader module:
         let mut wgsl = String::new();
-        for file in source.files {
-            wgsl.push_str(file.wgsl);
+        for f in source.files {
+            wgsl.push_str(self.current_wgsl.get(f).unwrap());
+        }
+        if let Err(err) = validate_wgsl(&wgsl) {
+            panic!("Error: {err}");
         }
         self.get_shader_module(wgsl)
     }
 
+    /// checks for changes in the watched paths and if so, updates all the hotreloadable renderers.
     pub fn hot_reload(&mut self, reload: &mut [&mut dyn HotReload]) {
         let Some(watcher) = &mut self.hot_reload_watcher else {
             return;
@@ -76,6 +81,8 @@ impl ShaderCache {
         let Some(paths_changed) = watcher.check_for_changes() else {
             return;
         };
+
+        dbg!(&paths_changed);
 
         let mut files_to_reload = HashSet::new();
         for p in paths_changed {
@@ -87,9 +94,11 @@ impl ShaderCache {
         }
 
         for f in files_to_reload.iter() {
-            let file_path = format!("{}/{}", self.hot_reload_shaders_dir, f.file);
-            let content = std::fs::read_to_string(file_path).unwrap();
-            self.current_wgsl.insert(*f, content);
+            let path = format!("{}/{}", self.hot_reload_shaders_dir, f.file);
+            if std::path::Path::new(&path).exists() {
+                let wgsl = std::fs::read_to_string(&path).unwrap();
+                self.current_wgsl.insert(*f, wgsl);
+            }
         }
 
         for r in reload {
@@ -98,20 +107,34 @@ impl ShaderCache {
             for f in source.files {
                 wgsl.push_str(self.current_wgsl.get(f).unwrap());
             }
-            let shader = self.get_shader_module(wgsl);
-            r.hot_reload(&shader);
+
+            if let Err(err) = validate_wgsl(&wgsl) {
+                println!("Hot-Reload-Error: {err}");
+            } else {
+                let shader = self.get_shader_module(wgsl);
+                r.hot_reload(&shader);
+            }
         }
     }
 
     fn add_file(&mut self, file: ShaderFile) {
-        self.current_wgsl.insert(file, file.wgsl.to_owned());
+        let wgsl: String;
         if let Some(watcher) = &mut self.hot_reload_watcher {
-            let file_path = format!("{}/{}", self.hot_reload_shaders_dir, file.file);
-            // write a file to e.g. assets/hotreload/ui_rect.wgsl
-            std::fs::write(&file_path, file.wgsl).expect("hot_reload_shaders_dir should exist");
-            // start watching this file:
-            watcher.watch(&file_path);
+            let path = format!("{}/{}", self.hot_reload_shaders_dir, file.file);
+
+            if std::path::Path::new(&path).exists() {
+                wgsl = std::fs::read_to_string(&path).unwrap();
+            } else {
+                wgsl = file.wgsl.to_owned();
+                std::fs::write(&path, &file.wgsl).unwrap();
+            }
+            println!("Watch path {path}");
+            watcher.watch(&path);
+        } else {
+            wgsl = file.wgsl.to_owned();
         }
+
+        self.current_wgsl.insert(file, wgsl);
     }
 
     fn get_shader_module(&mut self, wgsl: String) -> Arc<wgpu::ShaderModule> {
@@ -133,4 +156,9 @@ impl ShaderCache {
 
         shader
     }
+}
+
+fn validate_wgsl(wgsl: &str) -> anyhow::Result<()> {
+    wgpu::naga::front::wgsl::parse_str(&wgsl)?;
+    Ok(())
 }

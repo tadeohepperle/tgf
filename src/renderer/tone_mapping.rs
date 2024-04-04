@@ -1,27 +1,34 @@
-use wgpu::{PushConstantRange, ShaderStages};
+use std::sync::Arc;
 
-use crate::{rgba_bind_group_layout_cached, GraphicsContext, ScreenVertexShader};
+use wgpu::{PushConstantRange, ShaderModule, ShaderStages};
 
-pub struct AcesToneMapping {
+use crate::{
+    make_shader_source, rgba_bind_group_layout_cached, GraphicsContext, HotReload, ShaderCache,
+    ShaderSource,
+};
+
+pub struct ToneMapping {
     enabled: bool,
     pipeline: wgpu::RenderPipeline,
+    ctx: GraphicsContext,
+    output_format: wgpu::TextureFormat,
 }
 
-impl AcesToneMapping {
+const SHADER_SOURCE: ShaderSource = make_shader_source!("screen.wgsl", "tonemapping.wgsl");
+
+impl ToneMapping {
     pub fn new(
         ctx: &GraphicsContext,
-        screen_vertex_shader: &ScreenVertexShader,
         output_format: wgpu::TextureFormat,
+        shader_cache: &mut ShaderCache,
     ) -> Self {
-        let pipeline = create_pipeline(
-            include_str!("tonemapping.wgsl"),
-            &ctx.device,
-            screen_vertex_shader,
-            output_format,
-        );
+        let shader = shader_cache.register(SHADER_SOURCE);
+        let pipeline = create_pipeline(&shader, &ctx.device, output_format);
         Self {
             enabled: true,
             pipeline,
+            ctx: ctx.clone(),
+            output_format,
         }
     }
 
@@ -64,16 +71,21 @@ impl AcesToneMapping {
     }
 }
 
+impl HotReload for ToneMapping {
+    fn source(&self) -> ShaderSource {
+        SHADER_SOURCE
+    }
+
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
+        self.pipeline = create_pipeline(shader, &self.ctx.device, self.output_format)
+    }
+}
+
 fn create_pipeline(
-    shader_wgsl: &str,
+    shader: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    screen_vertex_shader: &ScreenVertexShader,
     output_format: wgpu::TextureFormat,
 ) -> wgpu::RenderPipeline {
-    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("Tonemapping Shader"),
-        source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(shader_wgsl)),
-    });
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
         bind_group_layouts: &[rgba_bind_group_layout_cached(device)],
@@ -86,7 +98,11 @@ fn create_pipeline(
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some(&format!("{:?}", shader)),
         layout: Some(&pipeline_layout),
-        vertex: screen_vertex_shader.vertex_state(),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: "vs_main",
+            buffers: &[],
+        },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
             entry_point: "fs_main",

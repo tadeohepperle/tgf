@@ -34,7 +34,7 @@ macro_rules! edit {
         $crate::utils::global_vals_get($name, || ($val, None))
     }};
     ($val:expr, $params:expr, $name:literal) => {{
-        coal_core::utils::global_vals_get($name, || ($val, Some($params)))
+        crate::utils::global_vals_get($name, || ($val, Some($params)))
     }};
 }
 

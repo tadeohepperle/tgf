@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     rgba_bind_group_layout_cached, rgba_bind_group_layout_msaa4_cached, BindableTexture, Color,
     GraphicsContext, RenderFormat, Texture,
@@ -9,7 +11,6 @@ pub struct ScreenTextures {
     pub depth_texture: Option<DepthTexture>,
     pub hdr_msaa_texture: HdrTexture,
     pub hdr_resolve_target: HdrTexture,
-    pub screen_vertex_shader: ScreenVertexShader,
 }
 
 impl ScreenTextures {
@@ -19,14 +20,12 @@ impl ScreenTextures {
         });
         let hdr_msaa_texture = HdrTexture::create_screen_sized(ctx, 4, render_format.color);
         let hdr_resolve_target = HdrTexture::create_screen_sized(ctx, 1, render_format.color);
-        let screen_vertex_shader = ScreenVertexShader::new(&ctx.device);
 
         Self {
             render_format,
             depth_texture,
             hdr_msaa_texture,
             hdr_resolve_target,
-            screen_vertex_shader,
         }
     }
 
@@ -264,28 +263,6 @@ impl HdrTexture {
                 bind_group,
             },
             _unused_sample_count: sample_count,
-        }
-    }
-}
-
-/// Shader for a single triangle that covers the entire screen.
-#[derive(Debug)]
-pub struct ScreenVertexShader(wgpu::ShaderModule);
-
-impl ScreenVertexShader {
-    pub fn new(device: &wgpu::Device) -> Self {
-        let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Screen Vertex Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("screen.vert.wgsl").into()),
-        });
-        ScreenVertexShader(module)
-    }
-
-    pub fn vertex_state(&self) -> wgpu::VertexState<'_> {
-        wgpu::VertexState {
-            module: &self.0,
-            entry_point: "vs_main",
-            buffers: &[],
         }
     }
 }

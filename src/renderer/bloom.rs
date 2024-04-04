@@ -1,10 +1,10 @@
 use std::{borrow::Cow, sync::Arc};
 
 use crate::{
-    graphics_context::GraphicsContext, rgba_bind_group_layout_cached, HdrTexture, ScreenGR,
-    ScreenVertexShader,
+    graphics_context::GraphicsContext, make_shader_source, rgba_bind_group_layout_cached,
+    HdrTexture, HotReload, ScreenGR, ShaderCache, ShaderSource,
 };
-use wgpu::{BlendComponent, BlendFactor, BlendOperation, BlendState};
+use wgpu::{BindGroupLayout, BlendComponent, BlendFactor, BlendOperation, BlendState};
 use winit::dpi::PhysicalSize;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -50,24 +50,28 @@ pub struct Bloom {
     settings: BloomSettings,
     ctx: GraphicsContext,
     color_format: wgpu::TextureFormat,
+    screen_layout: Arc<wgpu::BindGroupLayout>,
 }
+
+const SHADER_SOURCE: ShaderSource = make_shader_source!("screen.wgsl", "bloom.wgsl");
 
 impl Bloom {
     pub fn new(
         ctx: &GraphicsContext,
-        screen_vertex_shader: &ScreenVertexShader,
         screen: &ScreenGR,
         color_format: wgpu::TextureFormat,
+        shader_cache: &mut ShaderCache,
     ) -> Self {
         let size = ctx.size();
         let width = size.width;
         let height = size.height;
         let bloom_textures = BloomTextures::create(&ctx.device, width, height, color_format);
+
+        let shader = shader_cache.register(SHADER_SOURCE);
         let bloom_pipelines = BloomPipelines::new(
-            include_str!("bloom.wgsl"),
+            &shader,
             &ctx.device,
-            screen_vertex_shader,
-            screen,
+            screen.bind_group_layout(),
             color_format,
         );
 
@@ -77,6 +81,7 @@ impl Bloom {
             settings: Default::default(),
             ctx: ctx.clone(),
             color_format,
+            screen_layout: screen.bind_group_layout().clone(),
         }
     }
 
@@ -333,24 +338,15 @@ struct BloomPipelines {
 
 impl BloomPipelines {
     pub fn new(
-        shader_wgsl: &str,
+        shader: &wgpu::ShaderModule,
         device: &wgpu::Device,
-        screen_vertex_shader: &ScreenVertexShader,
-        screen: &ScreenGR,
+        screen_layout: &wgpu::BindGroupLayout,
         color_format: wgpu::TextureFormat,
     ) -> Self {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[
-                screen.bind_group_layout(),
-                rgba_bind_group_layout_cached(device),
-            ],
+            bind_group_layouts: &[screen_layout, rgba_bind_group_layout_cached(device)],
             push_constant_ranges: &[],
-        });
-
-        let fragment_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Bloom Shader"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(shader_wgsl)),
         });
 
         let create_pipeline = |label: &str,
@@ -360,9 +356,13 @@ impl BloomPipelines {
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some(label),
                 layout: Some(&pipeline_layout),
-                vertex: screen_vertex_shader.vertex_state(),
+                vertex: wgpu::VertexState {
+                    module: &shader,
+                    entry_point: "vs_main",
+                    buffers: &[],
+                },
                 fragment: Some(wgpu::FragmentState {
-                    module: &fragment_shader,
+                    module: &shader,
                     entry_point,
                     targets: &[Some(wgpu::ColorTargetState {
                         format: color_format,
@@ -458,5 +458,20 @@ impl BloomTextures {
                 level(8),
             ],
         }
+    }
+}
+
+impl HotReload for Bloom {
+    fn source(&self) -> ShaderSource {
+        SHADER_SOURCE
+    }
+
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
+        self.bloom_pipelines = BloomPipelines::new(
+            shader,
+            &self.ctx.device,
+            &self.screen_layout,
+            self.color_format,
+        );
     }
 }

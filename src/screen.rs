@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use winit::dpi::PhysicalSize;
 
 use crate::{GraphicsContext, ToRaw, UniformBuffer};
@@ -6,7 +8,7 @@ use crate::{GraphicsContext, ToRaw, UniformBuffer};
 pub struct ScreenGR {
     uniform: UniformBuffer<ScreenRaw>,
     bind_group: wgpu::BindGroup,
-    bind_group_layout: wgpu::BindGroupLayout,
+    bind_group_layout: Arc<wgpu::BindGroupLayout>,
 }
 
 impl ScreenGR {
@@ -26,7 +28,7 @@ impl ScreenGR {
                 count: None,
             }],
         };
-        let bind_group_layout = ctx.device.create_bind_group_layout(&layout_descriptor);
+        let bind_group_layout = Arc::new(ctx.device.create_bind_group_layout(&layout_descriptor));
         let bind_group = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ScreenSize BindGroup"),
             layout: &bind_group_layout,
@@ -49,7 +51,7 @@ impl ScreenGR {
 }
 
 impl ScreenGR {
-    pub fn bind_group_layout(&self) -> &wgpu::BindGroupLayout {
+    pub fn bind_group_layout(&self) -> &Arc<wgpu::BindGroupLayout> {
         &self.bind_group_layout
     }
 

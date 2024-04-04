@@ -1,13 +1,18 @@
+use std::sync::Arc;
+
 use glam::{vec3, Vec3};
 use wgpu::{
-    core::device::queue, BufferUsages, FragmentState, PrimitiveState, RenderPipelineDescriptor,
-    ShaderModuleDescriptor, VertexState,
+    core::device::queue, BindGroupLayout, BufferUsages, FragmentState, PrimitiveState,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, VertexState,
 };
 
 use crate::{
-    Camera3dGR, Color, GraphicsContext, GrowableBuffer, ImmediateMeshQueue, ImmediateMeshRanges,
-    RenderFormat, ToRaw, Transform, TransformRaw, VertexT, VertsLayout,
+    make_shader_source, Camera3dGR, Color, GraphicsContext, GrowableBuffer, HotReload,
+    ImmediateMeshQueue, ImmediateMeshRanges, RenderFormat, ShaderCache, ShaderSource, ToRaw,
+    Transform, TransformRaw, VertexT, VertsLayout,
 };
+
+const SHADER_SOURCE: ShaderSource = make_shader_source!("color_mesh.wgsl");
 
 #[derive(Debug)]
 pub struct ColorMeshRenderer {
@@ -17,8 +22,11 @@ pub struct ColorMeshRenderer {
     /// information about index ranges
     render_data: RenderData,
     ctx: GraphicsContext,
+    config: ColorMeshRendererConfig,
+    camera_layout: Arc<wgpu::BindGroupLayout>,
 }
 
+#[derive(Debug, Clone)]
 pub struct ColorMeshRendererConfig {
     pub render_format: RenderFormat,
     pub depth_write_enabled: bool,
@@ -42,16 +50,20 @@ impl ColorMeshRenderer {
         ctx: &GraphicsContext,
         camera: &Camera3dGR,
         config: ColorMeshRendererConfig,
+        cache: &mut ShaderCache,
     ) -> Self {
-        let _device = &ctx.device;
+        let shader_source = make_shader_source!("color_mesh.wgsl");
+        let shader = cache.register(SHADER_SOURCE);
         let pipeline =
-            create_render_pipeline(include_str!("color_mesh.wgsl"), &ctx.device, camera, config);
+            create_render_pipeline(&shader, &ctx.device, camera.bind_group_layout(), &config);
 
         ColorMeshRenderer {
             pipeline,
             color_mesh_queue: ImmediateMeshQueue::default(),
             render_data: RenderData::new(&ctx.device),
             ctx: ctx.clone(),
+            camera_layout: camera.bind_group_layout().clone(),
+            config,
         }
     }
 
@@ -134,6 +146,17 @@ impl ColorMeshRenderer {
     }
 }
 
+impl HotReload for ColorMeshRenderer {
+    fn source(&self) -> crate::ShaderSource {
+        SHADER_SOURCE
+    }
+
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
+        self.pipeline =
+            create_render_pipeline(shader, &self.ctx.device, &self.camera_layout, &self.config)
+    }
+}
+
 // /////////////////////////////////////////////////////////////////////////////
 // Render Pipeline
 // /////////////////////////////////////////////////////////////////////////////
@@ -201,22 +224,18 @@ impl ToRaw for (Transform, Color) {
 }
 
 fn create_render_pipeline(
-    wgsl: &str,
+    shader: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera: &Camera3dGR,
-    config: ColorMeshRendererConfig,
+    camera_layout: &BindGroupLayout,
+    config: &ColorMeshRendererConfig,
 ) -> wgpu::RenderPipeline {
     let label = "ColorMeshRenderer";
-    let shader_module = device.create_shader_module(ShaderModuleDescriptor {
-        label: Some(&format!("{label} ShaderModule")),
-        source: wgpu::ShaderSource::Wgsl(wgsl.into()),
-    });
 
     let verts = VertsLayout::new().vertex::<Vertex>().instance::<Instance>();
 
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(&format!("{label} PipelineLayout")),
-        bind_group_layouts: &[(camera.bind_group_layout())],
+        bind_group_layouts: &[camera_layout],
         push_constant_ranges: &[],
     });
 
@@ -224,12 +243,12 @@ fn create_render_pipeline(
         label: Some(&format!("{label} Pipeline")),
         layout: Some(&layout),
         vertex: VertexState {
-            module: &shader_module,
+            module: &shader,
             entry_point: "vs_main",
             buffers: verts.layout(),
         },
         fragment: Some(FragmentState {
-            module: &shader_module,
+            module: &shader,
             entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState {
                 format: config.render_format.color,
