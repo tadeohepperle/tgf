@@ -187,8 +187,12 @@ impl App {
         let cam_controller = FlyCamController { speed, angle_speed };
         cam_controller.update(&self.input, &self.time, &mut self.camera);
 
-        egui::Window::new("Hello").show(&self.egui.context(), |ui| {
-            ui.label("Hello");
+        egui::Window::new("Fps").show(&self.egui.context(), |ui| {
+            ui.label(format!(
+                "Fps: {:.0} / {:.3} ms",
+                self.time.fps(),
+                self.time.delta().as_secs_f32() * 1000.0
+            ));
         });
     }
 }
