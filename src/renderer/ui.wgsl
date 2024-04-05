@@ -224,7 +224,7 @@ fn glyph_vs(
 @fragment
 fn glyph_fs(in: GlyphVertexOutput) -> @location(0) vec4<f32> {
     let sdf: f32 = textureSample(t_diffuse, s_diffuse, in.uv).r;
-    let smoothing: f32 =  4.0 / (in.others[0]); // in.others[0] is font_size  // 6.0 seems to work fine for most cases.
+    let smoothing: f32 =  4.0 / in.others.x; // in.others.x is font_size  // 6.0 seems to work fine for most cases.
     let inside_factor = smoothstep(0.5 - smoothing, 0.5 + smoothing, sdf);
     let shadow_alpha =  (1.0 - (pow(1.0 - sdf, 2.0)) )* in.others[1] * in.color.a; // in.others[1] is shadow_intensity
     let shadow_color = vec4(0.0,0.0,0.0, shadow_alpha);

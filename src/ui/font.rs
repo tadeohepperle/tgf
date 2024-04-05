@@ -2,7 +2,7 @@ use std::{fmt::Debug, hash::Hasher};
 
 use ahash::AHashMap;
 
-use crate::{utils::next_pow2_number, Aabb, BindableTexture, Texture};
+use crate::{utils::next_pow2_number, Aabb, BindableTexture, GraphicsContext, Texture};
 use etagere::Size;
 use fontdue::LineMetrics;
 use glam::vec2;
@@ -134,6 +134,13 @@ impl SdfFont {
             atlas_dbg: image::RgbaImage::new(atlas_size as u32, atlas_size as u32),
             pad_size,
         }
+    }
+
+    pub fn from_bytes(data: &[u8], ctx: &GraphicsContext) -> Self {
+        let font =
+            fontdue::Font::from_bytes(data, Default::default()).expect("data must be valid ttf");
+        let sdf_font = Self::new_with_default_chars(font, 64, 16, &ctx.device, &ctx.queue);
+        sdf_font
     }
 
     pub fn new_with_default_chars(

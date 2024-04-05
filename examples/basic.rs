@@ -1,12 +1,15 @@
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 use glam::{Quat, Vec3};
 use rand::{thread_rng, Rng};
 use tgf::{
-    edit, renderer::screen_textures, utils::camera_controllers::FlyCamController, AppT, Bloom,
-    Camera3d, Camera3dGR, Color, ColorMeshRenderer, DefaultWorld, Egui, Gizmos, GraphicsContext,
-    Input, KeyCode, RenderFormat, Runner, Screen, ScreenGR, ScreenTextures, Time, ToneMapping,
-    Transform, Window,
+    edit,
+    renderer::screen_textures,
+    ui::{div, Align, SdfFont, TextSection},
+    utils::camera_controllers::FlyCamController,
+    AppT, Bloom, Camera3d, Camera3dGR, Color, ColorMeshRenderer, DefaultWorld, Egui, Gizmos,
+    GraphicsContext, Input, KeyCode, RenderFormat, Runner, Screen, ScreenGR, ScreenTextures, Time,
+    ToneMapping, Transform, Window,
 };
 use wgpu::{RenderPassColorAttachment, RenderPassDescriptor};
 
@@ -19,6 +22,7 @@ pub fn main() {
 struct App {
     world: DefaultWorld,
     some_cubes: Vec<Cube>,
+    font: Rc<SdfFont>,
 }
 
 impl AppT for App {
@@ -28,12 +32,7 @@ impl AppT for App {
 
     fn update(&mut self, cb: &mut tgf::RunnerCallbacks) {
         self.world.start_frame();
-
-        if self.world.input.close_requested() {
-            cb.exit("exit");
-        }
-
-        self.main_update();
+        self.main_update(cb);
         self.world.render();
         self.world.end_frame();
     }
@@ -43,19 +42,48 @@ impl App {
     fn new(window: Arc<Window>) -> Self {
         let world = DefaultWorld::new(window);
         let some_cubes = random_cubes();
-
-        Self { world, some_cubes }
+        let font =
+            SdfFont::from_bytes(include_bytes!("../assets/MarkoOne-Regular.ttf"), &world.ctx);
+        Self {
+            world,
+            some_cubes,
+            font: Rc::new(font),
+        }
     }
 
-    fn main_update(&mut self) {
+    fn main_update(&mut self, cb: &mut tgf::RunnerCallbacks) {
+        if self.world.input.close_requested() {
+            cb.exit("exit");
+        }
+
+        let delta = self.world.time.delta().as_secs_f32();
+        let total = self.world.time.total().as_secs_f32();
+
+        let shadow_intensity = edit!(1.7, 0.0..10.0, "shadow intensity");
+        let font_size = edit!(64.0, 0.0..300.0, "font size");
+        self.world.ui.set_element(
+            div()
+                .full()
+                .style(|s| {
+                    s.padding.top = 32.0 + (total * 2.0).sin() as f64 * 8.0;
+                    s.cross_align = Align::Center;
+                })
+                .child(TextSection {
+                    string: "Move with WASD. Turn with arrow keys.".into(),
+                    font: self.font.clone(),
+                    color: Color::WHITE,
+                    font_size,
+                    shadow_intensity,
+                })
+                .store(),
+        );
+
         self.world.gizmos.draw_xyz();
 
         if self.world.input.keys().just_pressed(KeyCode::Space) {
             self.some_cubes = random_cubes();
         }
 
-        let delta = self.world.time.delta().as_secs_f32();
-        let total = self.world.time.total().as_secs_f32();
         for c in self.some_cubes.iter_mut() {
             c.color.r = ((total + c.position.x % 2.0) * 4.0).sin() + 1.0 * 5.0;
             c.position += c.velocity * delta;
@@ -77,7 +105,7 @@ impl App {
             .collect();
         self.world.color_renderer.draw_cubes(&cube_instances);
 
-        let speed: f32 = edit!(10.0, "speed");
+        let speed: f32 = edit!(10.0, 0.0..100.0, "speed");
         let angle_speed: f32 = edit!(2.0, "angle speed");
         let cam_controller = FlyCamController { speed, angle_speed };
         cam_controller.update(&self.world.input, &self.world.time, &mut self.world.camera);

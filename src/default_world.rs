@@ -1,14 +1,17 @@
 use std::sync::Arc;
 
 use crate::{
-    edit, renderer::screen_textures, utils::camera_controllers::FlyCamController, AppT, Bloom,
-    Camera3d, Camera3dGR, Color, ColorMeshRenderer, Egui, Gizmos, GraphicsContext, Input, KeyCode,
-    RenderFormat, Runner, RunnerCallbacks, Screen, ScreenGR, ScreenTextures, ShaderCache, Time,
-    ToneMapping, Transform, Window,
+    edit,
+    renderer::{screen_textures, ui_screen::UiScreenRenderer},
+    ui::{batching::ElementBatchesGR, div, Board, REFERENCE_SCREEN_SIZE_D},
+    utils::camera_controllers::FlyCamController,
+    AppT, Bloom, Camera3d, Camera3dGR, Color, ColorMeshRenderer, Egui, Gizmos, GraphicsContext,
+    Input, KeyCode, RenderFormat, Runner, RunnerCallbacks, Screen, ScreenGR, ScreenTextures,
+    ShaderCache, Time, ToneMapping, Transform, Window,
 };
 use glam::{Quat, Vec3};
 use wgpu::{RenderPassColorAttachment, RenderPassDescriptor};
-use winit::event::WindowEvent;
+use winit::{dpi::PhysicalSize, event::WindowEvent};
 
 /// use it like this.
 pub fn main() {
@@ -36,6 +39,9 @@ pub struct DefaultWorld {
     pub egui: crate::Egui,
     pub color_renderer: ColorMeshRenderer,
     pub gizmos: Gizmos,
+    pub ui_renderer: UiScreenRenderer,
+    pub ui: Board,
+    pub ui_gr: ElementBatchesGR,
 }
 
 impl AppT for DefaultWorld {
@@ -43,11 +49,7 @@ impl AppT for DefaultWorld {
         self.input.receive_window_event(event);
         self.egui.receive_window_event(event);
         if let Some(size) = self.input.resized() {
-            self.ctx.resize(size);
-            self.screen_textures.resize(&self.ctx, size);
-            self.camera.resize(size);
-            self.screen.resize(size);
-            self.bloom.resize(size);
+            self.resize(size);
         }
     }
 
@@ -65,7 +67,7 @@ impl DefaultWorld {
     pub fn new(window: Arc<Window>) -> Self {
         let rt = tokio::runtime::Builder::new_multi_thread().build().unwrap();
         let ctx = GraphicsContext::new(Default::default(), &rt, &window).unwrap();
-        let mut shader_cache = ShaderCache::new(&ctx, Some("./assets"));
+        let mut shader_cache = ShaderCache::new(&ctx, Some("./hotreload"));
 
         let mut camera = Camera3d::new(window.inner_size().width, window.inner_size().height);
         camera.transform.pos.x = -70.0;
@@ -91,6 +93,10 @@ impl DefaultWorld {
         let time = Time::new();
         let input = Input::new();
 
+        let ui_renderer = UiScreenRenderer::new(&ctx, &screen_gr, &mut shader_cache);
+        let ui = Board::new(&mut (), REFERENCE_SCREEN_SIZE_D);
+        let ui_gr = ElementBatchesGR::new(&ui.batches, &ctx.device);
+
         Self {
             window,
             rt,
@@ -108,6 +114,9 @@ impl DefaultWorld {
             tone_mapping,
             color_renderer,
             gizmos,
+            ui_renderer,
+            ui,
+            ui_gr,
         }
     }
 
@@ -119,11 +128,22 @@ impl DefaultWorld {
             &mut self.gizmos,
             &mut self.bloom,
             &mut self.tone_mapping,
+            &mut self.ui_renderer,
         ]);
+        self.ui.ctx.set_input(&self.input);
     }
 
     pub fn end_frame(&mut self) {
         self.input.end_frame();
+    }
+
+    fn resize(&mut self, size: PhysicalSize<u32>) {
+        self.ctx.resize(size);
+        self.camera.resize(size);
+        self.screen.resize(size);
+        self.bloom.resize(size);
+        self.screen_textures.resize(&self.ctx, size);
+        self.ui.resize_scaled_to_fixed_height(size);
     }
 
     fn prepare(&mut self, encoder: &mut wgpu::CommandEncoder) {
@@ -131,6 +151,8 @@ impl DefaultWorld {
         self.gizmos.prepare();
         self.camera_gr.prepare(&self.ctx.queue, &self.camera);
         self.egui.prepare(&self.ctx, encoder);
+        self.ui_gr.prepare(&self.ui.batches, &self.ctx);
+        self.screen_gr.prepare(&self.ctx.queue, &self.screen);
     }
 
     pub fn render(&mut self) {
@@ -159,6 +181,13 @@ impl DefaultWorld {
             &mut encoder,
             self.screen_textures.hdr_resolve_target.bind_group(),
             &view,
+        );
+        self.ui_renderer.render_in_new_pass(
+            &mut encoder,
+            &view,
+            &self.ui_gr,
+            &self.ui.batches.batches,
+            &self.screen_gr,
         );
         self.egui.render(&mut encoder, &view);
 

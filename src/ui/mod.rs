@@ -19,3 +19,10 @@ pub use font::SdfFont;
 pub use fontdue::{Font, FontSettings};
 
 pub use batching::get_batches;
+use glam::{dvec2, DVec2, Vec2};
+
+pub const REFERENCE_SCREEN_SIZE_D: DVec2 = dvec2(1920.0, 1080.0); // this is the reference we design all ui for.
+pub const REFERENCE_SCREEN_SIZE: Vec2 = Vec2 {
+    x: REFERENCE_SCREEN_SIZE_D.x as f32,
+    y: REFERENCE_SCREEN_SIZE_D.y as f32,
+};

@@ -1,7 +1,8 @@
 use std::rc::Rc;
 
 use crate::{
-    renderer::sdf_sprite::AlphaSdfParams, Aabb, BindableTexture, Color, GrowableBuffer, VertexT,
+    renderer::sdf_sprite::AlphaSdfParams, Aabb, BindableTexture, Color, GraphicsContext,
+    GrowableBuffer, VertexT,
 };
 use wgpu::BufferUsages;
 
@@ -435,15 +436,11 @@ impl ElementBatchesGR {
         }
     }
 
-    pub fn prepare(
-        &mut self,
-        batches: &ElementBatches,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    ) {
-        self.rects.prepare(&batches.rects, device, queue);
+    pub fn prepare(&mut self, batches: &ElementBatches, ctx: &GraphicsContext) {
+        self.rects.prepare(&batches.rects, &ctx.device, &ctx.queue);
         self.textured_rects
-            .prepare(&batches.textured_rects, device, queue);
-        self.glyphs.prepare(&batches.glyphs, device, queue);
+            .prepare(&batches.textured_rects, &ctx.device, &ctx.queue);
+        self.glyphs
+            .prepare(&batches.glyphs, &ctx.device, &ctx.queue);
     }
 }
