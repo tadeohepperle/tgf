@@ -5,7 +5,6 @@ edition = "2021"
 license = "MIT"
 description = "Tadeo's Game Framework"
 
-
 [features]
 default = ["eguimod"]
 eguimod = ["egui", "egui-wgpu"]

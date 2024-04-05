@@ -178,7 +178,6 @@ impl Board {
     /// set to 1920px because this reflects the same 16:9 screen ratio
     pub fn resize_scaled_to_fixed_height(&mut self, size: PhysicalSize<u32>) {
         self.size.x = size.width as f64 / size.height as f64 * self.size.y;
-        dbg!(self.size);
     }
 
     pub fn resize_dvec2(&mut self, size: DVec2) {

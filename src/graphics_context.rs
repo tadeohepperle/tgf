@@ -48,7 +48,7 @@ impl Default for GraphicsContextConfig {
                 | wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
                 | wgpu::Features::TEXTURE_BINDING_ARRAY,
             present_mode: wgpu::PresentMode::AutoNoVsync,
-            max_push_constant_size: 64,
+            max_push_constant_size: 80,
             surface_format: wgpu::TextureFormat::Bgra8UnormSrgb,
         }
     }

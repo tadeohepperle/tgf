@@ -21,6 +21,12 @@ impl ElementBox {
         self.element_mut().get_and_set_size(size);
         self.element_mut().set_position(pos_offset);
     }
+
+    pub fn layout_relative_to_own_size(&mut self, unit_pos: DVec2, pos_offset: DVec2) {
+        let own_size = self.element_mut().get_and_set_size(DVec2::MAX);
+        self.element_mut()
+            .set_position(-own_size * unit_pos + pos_offset);
+    }
 }
 
 impl ElementWithComputed {
