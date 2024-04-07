@@ -1,4 +1,5 @@
-use std::borrow::Cow;
+use std::ops::Deref;
+use std::{borrow::Cow, sync::Arc};
 
 use std::rc::Rc;
 
@@ -22,8 +23,22 @@ pub enum Element {
 
 #[derive(Debug, Default)]
 pub struct Div {
-    pub style: DivStyle,
+    style: DivStyle,
     pub children: SmallVec<[ElementBox; 4]>,
+}
+
+impl std::ops::Deref for Div {
+    type Target = DivStyle;
+
+    fn deref(&self) -> &Self::Target {
+        &self.style
+    }
+}
+
+impl std::ops::DerefMut for Div {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.style
+    }
 }
 
 pub fn div() -> Div {
@@ -183,6 +198,16 @@ impl DivStyle {
 
     pub fn alpha_sdf(&mut self, region: TextureRegion, params: AlphaSdfParams) {
         self.texture = DivTexture::AlphaSdfTexture(SdfTextureRegion { region, params });
+    }
+
+    pub fn size(&mut self, w: u32, h: u32) {
+        self.width = Some(Len::Px(w as f64));
+        self.height = Some(Len::Px(h as f64));
+    }
+
+    pub fn center(&mut self) {
+        self.main_align = MainAlign::Center;
+        self.cross_align = Align::Center;
     }
 }
 
@@ -404,8 +429,64 @@ impl From<TextSection> for Element {
 }
 
 #[derive(Debug, Clone)]
+pub enum UiString {
+    Static(&'static str),
+    String(String),
+    Arc(Arc<str>),
+    Rc(Rc<str>),
+}
+
+impl std::ops::Deref for UiString {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            UiString::Static(s) => *s,
+            UiString::String(s) => s,
+            UiString::Arc(s) => s,
+            UiString::Rc(s) => s,
+        }
+    }
+}
+
+impl AsRef<str> for UiString {
+    fn as_ref(&self) -> &str {
+        match self {
+            UiString::Static(s) => *s,
+            UiString::String(s) => s,
+            UiString::Arc(s) => s,
+            UiString::Rc(s) => s,
+        }
+    }
+}
+
+impl From<&'static str> for UiString {
+    fn from(value: &'static str) -> Self {
+        UiString::Static(value)
+    }
+}
+
+impl From<String> for UiString {
+    fn from(value: String) -> Self {
+        UiString::String(value)
+    }
+}
+
+impl From<Arc<str>> for UiString {
+    fn from(value: Arc<str>) -> Self {
+        UiString::Arc(value)
+    }
+}
+
+impl From<Rc<str>> for UiString {
+    fn from(value: Rc<str>) -> Self {
+        UiString::Rc(value)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct TextSection {
-    pub string: Cow<'static, str>,
+    pub string: UiString,
     pub font: Rc<SdfFont>,
     pub color: Color,
     pub font_size: f32,

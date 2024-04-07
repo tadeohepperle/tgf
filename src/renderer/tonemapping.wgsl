@@ -15,10 +15,10 @@ var<push_constant> enabled: u32;
 fn fs_main(vs: VertexOutput) -> @location(0) vec4<f32> {
     let color_with_a: vec4<f32> = textureSample(hdr_image, hdr_sampler, vs.uv);
     if enabled == 1u{
-        return color_with_a;
-    }else{
         let color = aces_tone_map(color_with_a.rgb);
-        return vec4(color, color_with_a.a);
+        return vec4(color, color_with_a.a);   
+    }else{
+        return color_with_a;
     }
 }
 

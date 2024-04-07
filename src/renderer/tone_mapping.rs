@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub struct ToneMapping {
-    enabled: bool,
+    pub enabled: bool,
     pipeline: wgpu::RenderPipeline,
     ctx: GraphicsContext,
     output_format: wgpu::TextureFormat,
@@ -30,10 +30,6 @@ impl ToneMapping {
             ctx: ctx.clone(),
             output_format,
         }
-    }
-
-    pub fn enabled_mut(&mut self) -> &mut bool {
-        &mut self.enabled
     }
 
     /// Note: input texture should be hdr, output sdr

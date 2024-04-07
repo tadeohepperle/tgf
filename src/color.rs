@@ -116,6 +116,7 @@ impl Color {
 /// srgb_color = ((rgb_color / 255 + 0.055) / 1.055) ^ 2.4
 #[inline]
 pub fn color_map_to_srgb(u: u8) -> f32 {
+    // u as f32 / 255.0
     ((u as f32 / 255.0 + 0.055) / 1.055).powf(2.4)
 }
 

@@ -76,16 +76,14 @@ struct GlyphInstance {
     @location(0) aabb: vec4<f32>, // pos aabb for the glyph
     @location(1) color: vec4<f32>,
     @location(2) uv: vec4<f32>,    // uv aabb in the texture atlas
-    /// font_size, shadow_intensity
-    @location(3) others: vec2<f32>,
+    @location(3) shadow_intensity: f32,
 }
 
 struct GlyphVertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec4<f32>,
     @location(1) uv: vec2<f32>,
-     /// font_size, shadow_intensity
-    @location(2) others: vec2<f32>,
+    @location(2) shadow_intensity: f32,
 };
 
 // we calculate the vertices here in the shader instead of passing a vertex buffer
@@ -171,10 +169,7 @@ fn textured_rect_vs(
 
 @fragment
 fn textured_rect_fs(in: TexturedRectVertexOutput) -> @location(0) vec4<f32> {
-    // return vec4(0.5, 0.8,0.8,1.0);
-    
     let sdf = rounded_box_sdf(in.offset, in.size, in.border_radius);
- 
     let image_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.uv);
     let color: vec4<f32> = mix(image_color, in.border_color, smoothstep(0.0, 1.0, ((sdf + in.others[0]) / in.others[1]) ));
     // todo! add borders and other fancy stuff from above in rect_fs
@@ -217,32 +212,38 @@ fn glyph_vs(
     out.clip_position = vec4<f32>(device_pos, 0.0, 1.0);
     out.color = instance.color;
     out.uv = vertex.uv; 
-    out.others = vec2(instance.others.x * scale_factor, instance.others.y); // x = font_size, y = shadow_intensity
+    out.shadow_intensity = instance.shadow_intensity;
     return out;
 }
+
+/*
+
+From this github discussion: https://github.com/Chlumsky/msdfgen/issues/22
+
+vec3 sample = texture( uTex0, TexCoord ).rgb;
+ivec2 sz = textureSize( uTex0, 0 );
+float dx = dFdx( TexCoord.x ) * sz.x;
+float dy = dFdy( TexCoord.y ) * sz.y;
+float toPixels = 8.0 * inversesqrt( dx * dx + dy * dy );
+float sigDist = median( sample.r, sample.g, sample.b ) - 0.5;
+float opacity = clamp( sigDist * toPixels + 0.5, 0.0, 1.0 );
+
+*/
 
 @fragment
 fn glyph_fs(in: GlyphVertexOutput) -> @location(0) vec4<f32> {
     let sdf: f32 = textureSample(t_diffuse, s_diffuse, in.uv).r;
-    let smoothing: f32 =  4.0 / in.others.x; // in.others.x is font_size  // 6.0 seems to work fine for most cases.
-    let inside_factor = smoothstep(0.5 - smoothing, 0.5 + smoothing, sdf);
-    let shadow_alpha =  (1.0 - (pow(1.0 - sdf, 2.0)) )* in.others[1] * in.color.a; // in.others[1] is shadow_intensity
+    var sz : vec2<u32> = textureDimensions(t_diffuse, 0);
+    var dx : f32 = dpdx(in.uv.x) * f32(sz.x);
+    var dy : f32 = dpdy(in.uv.y) * f32(sz.y);
+    var to_pixels : f32 = 32.0 * inverseSqrt(dx * dx + dy * dy);
+    let inside_factor = clamp((sdf - 0.5) * to_pixels + 0.5, 0.0, 1.0);
+    
+    // smoothstep(0.5 - smoothing, 0.5 + smoothing, sample);
+    let shadow_alpha = (1.0 - (pow(1.0 - sdf, 2.0)) )* in.shadow_intensity * in.color.a;
     let shadow_color = vec4(0.0,0.0,0.0, shadow_alpha);
     let color = mix(shadow_color, in.color, inside_factor);
-    return vec4(color); // * vec4(1.0,1.0,1.0,5.0);
-}
-
-// glyph with outline (currently not used)
-const outline_dist: f32 = 0.3;
-const outline_color: vec4<f32> = vec4(1.0,0.0,0.0,0.0);
-@fragment
-fn glyph_fs_outline(in: GlyphVertexOutput) -> @location(0) vec4<f32> {
-    let sdf: f32 = textureSample(t_diffuse, s_diffuse, in.uv).r;
-    let smoothing: f32 =  6.0/ (in.others[0]);
-    let outline_factor = smoothstep(0.5 - smoothing, 0.5 + smoothing, sdf);
-    let color = mix(outline_color, in.color, outline_factor);
-    let alpha = smoothstep(outline_dist - smoothing, outline_dist+smoothing, sdf);
-    return vec4(color.rgb, alpha * in.color.a); // ,
+    return color; // * vec4(1.0,1.0,1.0,5.0);
 }
 
 // given some bounding box aabb [f32;4] being min x, min y, max x, max y,

@@ -156,6 +156,7 @@ impl DefaultWorld {
     }
 
     pub fn render(&mut self) {
+        self.gizmos.draw_xyz();
         crate::utils::global_vals_window(&mut self.egui.context());
         self.show_fps();
 
@@ -196,7 +197,6 @@ impl DefaultWorld {
     }
 
     pub fn show_fps(&mut self) {
-        self.gizmos.draw_xyz();
         egui::Window::new("Fps").show(&self.egui.context(), |ui| {
             ui.label(format!(
                 "Fps: {:.0} / {:.3} ms",

@@ -44,14 +44,14 @@ impl RectRaw {
     fn new(div: &Div, computed: &DivComputed) -> Self {
         RectRaw {
             bounds: bounds_from_computed(&computed.bounds),
-            color: div.style.color,
-            border_radius: div.style.border.radius,
-            border_color: div.style.border.color,
-            border_width: div.style.border.width,
-            border_softness: div.style.border.softness,
-            shadow_width: div.style.shadow.width,
-            shadow_curve: div.style.shadow.curve_param,
-            shadow_color: div.style.shadow.color,
+            color: div.color,
+            border_radius: div.border.radius,
+            border_color: div.border.color,
+            border_width: div.border.width,
+            border_softness: div.border.softness,
+            shadow_width: div.shadow.width,
+            shadow_curve: div.shadow.curve_param,
+            shadow_color: div.shadow.color,
         }
     }
 }
@@ -107,7 +107,6 @@ pub struct GlyphRaw {
     pub bounds: Aabb,
     pub color: Color,
     pub uv: Aabb,
-    pub font_size: f32,
     pub shadow_intensity: f32,
 }
 
@@ -116,7 +115,7 @@ impl VertexT for GlyphRaw {
         wgpu::VertexFormat::Float32x4, // "pos"
         wgpu::VertexFormat::Float32x4, // "color"
         wgpu::VertexFormat::Float32x4, // "uv"
-        wgpu::VertexFormat::Float32x2, // "font_size", "shadow_intensity"
+        wgpu::VertexFormat::Float32,   // "shadow_intensity"
     ];
 }
 
@@ -241,11 +240,11 @@ impl ElementWithComputed {
 
         match self {
             ElementWithComputed::Div(div) => {
-                level.z_index += div.0.style.z_index;
+                level.z_index += div.0.z_index;
 
                 // Note: elements with color = 0,0,0,0 will be discarded even if they have a colored border or shadow!!!
-                if div.0.style.color != Color::TRANSPARENT {
-                    let prim = match &div.0.style.texture {
+                if div.0.color != Color::TRANSPARENT {
+                    let prim = match &div.0.texture {
                         DivTexture::None => PrimElement::Rect(div),
                         DivTexture::Texture(texture) => PrimElement::TexturedRect(div, texture),
                         DivTexture::AlphaSdfTexture(sdf_texture) => {
@@ -369,7 +368,7 @@ pub fn get_batches(elements: &[&ElementWithComputed]) -> ElementBatches {
             PrimElement::AlphaSdfRect((div, computed), sdf_texture) => {
                 let alpha_sdf_rect = AlphaSdfRectRaw {
                     bounds: bounds_from_computed(&computed.bounds),
-                    color: div.style.color,
+                    color: div.color,
                     params: sdf_texture.params,
                     uv: sdf_texture.region.uv,
                 };
@@ -381,7 +380,6 @@ pub fn get_batches(elements: &[&ElementWithComputed]) -> ElementBatches {
                         bounds: g.bounds.into(),
                         color: section.color,
                         uv: g.uv,
-                        font_size: section.font_size,
                         shadow_intensity: section.shadow_intensity,
                     };
                     glyphs.push(glyph_raw);

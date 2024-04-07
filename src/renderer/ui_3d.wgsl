@@ -128,10 +128,7 @@ fn glyph_vs_3d(
 
     out.color = instance.color * data.color; // (apply push constants color)
     out.uv = vertex.uv; 
-    out.others = instance.others; // todo! the push constant color is not applied to the text shadow in instance.others!!! Fix later.
-    // others is: (font_size: f32, shadow_intensity: f32)
-    out.others = vec2(instance.others.x, instance.others.y * data.color.a);
-    
+    out.shadow_intensity = instance.shadow_intensity * data.color.a;
     return out;
 }
 

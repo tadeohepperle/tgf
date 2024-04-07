@@ -50,11 +50,11 @@ impl ElementWithComputed {
 
 impl Div {
     pub fn get_and_set_size(&mut self, max_size: DVec2, computed: &mut DivComputed) -> DVec2 {
-        let width = self.style.width.map(|e| e.fixed(max_size.x));
-        let height = self.style.height.map(|e| e.fixed(max_size.y));
+        let width = self.width.map(|e| e.fixed(max_size.x));
+        let height = self.height.map(|e| e.fixed(max_size.y));
 
-        let pad_x = self.style.padding.left + self.style.padding.right;
-        let pad_y = self.style.padding.top + self.style.padding.bottom;
+        let pad_x = self.padding.left + self.padding.right;
+        let pad_y = self.padding.top + self.padding.bottom;
 
         let size = &mut computed.bounds.size;
         let content_size = &mut computed.content_size;
@@ -87,7 +87,7 @@ impl Div {
     /// Returns the size the children take all together.
     fn get_and_set_child_sizes(&mut self, max_size: DVec2) -> DVec2 {
         let mut all_children_size = DVec2::ZERO;
-        match self.style.axis {
+        match self.axis {
             Axis::X => {
                 for child in self.children.iter_mut() {
                     let child = child.element_mut();
@@ -117,7 +117,7 @@ impl Div {
 
     fn set_position(&mut self, pos: DVec2, computed: &mut DivComputed) {
         // set own position:
-        computed.bounds.pos = pos + self.style.offset;
+        computed.bounds.pos = pos + self.offset;
 
         // set childrens positions:
         self.set_child_positions(computed)
@@ -125,7 +125,7 @@ impl Div {
 
     #[inline]
     fn set_child_positions(&mut self, own_computed: &mut DivComputed) {
-        match self.style.axis {
+        match self.axis {
             Axis::X => _monomorphized_set_child_positions::<XMain>(self, own_computed),
             Axis::Y => _monomorphized_set_child_positions::<YMain>(self, own_computed),
         }
@@ -173,8 +173,8 @@ impl Div {
             if n_children == 0 {
                 return;
             }
-            let pad_x = div.style.padding.left + div.style.padding.right;
-            let pad_y = div.style.padding.top + div.style.padding.bottom;
+            let pad_x = div.padding.left + div.padding.right;
+            let pad_y = div.padding.top + div.padding.bottom;
 
             // get computed values from the previous layout step (determine size + set own pos)
             let div_size = computed.bounds.size;
@@ -185,18 +185,14 @@ impl Div {
             // top left corner of the inner area instead of the top left corner of the div itself
 
             let inner_size = dvec2(div_size.x - pad_x, div_size.y - pad_y); // div size - padding size on all sides
-            let inner_pos = div_pos + dvec2(div.style.padding.left, div.style.padding.top);
+            let inner_pos = div_pos + dvec2(div.padding.left, div.padding.top);
 
             let (main_size, cross_size) = A::disassemble(inner_size);
             let (main_content_size, _) = A::disassemble(content_size);
-            let (mut main_offset, main_step) = main_offset_and_step(
-                div.style.main_align,
-                main_size,
-                main_content_size,
-                n_children,
-            );
+            let (mut main_offset, main_step) =
+                main_offset_and_step(div.main_align, main_size, main_content_size, n_children);
 
-            let calc_cross_offset = match div.style.cross_align {
+            let calc_cross_offset = match div.cross_align {
                 Align::Start => |_: f64, _: f64| -> f64 { 0.0 },
                 Align::Center => |cross_parent: f64, cross_item: f64| -> f64 {
                     (cross_parent - cross_item) * 0.5
@@ -276,7 +272,7 @@ impl Div {
 #[inline(always)]
 fn is_absolute(element: &ElementWithComputed) -> bool {
     match &element {
-        ElementWithComputed::Div((d, _)) => d.style.absolute.is_some(),
+        ElementWithComputed::Div((d, _)) => d.absolute.is_some(),
         ElementWithComputed::Text(_) => false,
     }
 }
@@ -284,7 +280,7 @@ fn is_absolute(element: &ElementWithComputed) -> bool {
 #[inline(always)]
 fn absolute_unit_pos(element: &ElementWithComputed) -> Option<Vec2> {
     match &element {
-        ElementWithComputed::Div((d, _)) => d.style.absolute,
+        ElementWithComputed::Div((d, _)) => d.absolute,
         ElementWithComputed::Text(_) => None,
     }
 }
@@ -462,7 +458,6 @@ impl TextLayout {
                 self.add_glyph_to_current_line(&g);
             }
         }
-
         self.text_section_glyphs
             .push(glyphs_len_before..self.glyphs.len())
     }
