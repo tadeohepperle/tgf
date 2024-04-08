@@ -13,6 +13,11 @@ use crate::ui::{
 };
 
 impl ElementBox {
+    /// performs the size-getting part of the layout. After this, the sizes in the computed values of this element and all sub-elements are set.
+    pub fn calculate_size(&mut self) -> DVec2 {
+        self.element_mut().get_and_set_size(DVec2::MAX)
+    }
+
     pub fn layout(&mut self) {
         self.layout_in_size(DVec2::MAX, DVec2::ZERO);
     }

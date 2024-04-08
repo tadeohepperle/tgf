@@ -46,6 +46,7 @@ pub fn div() -> Div {
 }
 
 /// vertical fill
+#[inline]
 pub fn v_fill(px: f64) -> Element {
     Element::Div(div().style(|s| {
         s.height = Some(Len::Px(px));
@@ -53,6 +54,7 @@ pub fn v_fill(px: f64) -> Element {
 }
 
 /// horizontal fill
+#[inline]
 pub fn h_fill(px: f64) -> Element {
     Element::Div(div().style(|s| {
         s.width = Some(Len::Px(px));
@@ -71,6 +73,7 @@ pub fn red_box() -> Element {
 }
 
 impl Div {
+    /// Allocates the div in the threadlocal slab allocator.
     pub fn store(self) -> ElementBox {
         Element::Div(self).store()
     }

@@ -67,6 +67,7 @@ impl Color {
         hsv_to_rgb(hue, saturation, value)
     }
 
+    #[inline]
     pub fn from_hex(hex: &str) -> Color {
         const fn hex_digit_value(c: char) -> u8 {
             match c {
