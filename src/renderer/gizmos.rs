@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use glam::vec2;
 use glam::vec3;
 use glam::Vec3;
 use wgpu::BindGroupLayout;
@@ -10,6 +11,7 @@ use wgpu::ShaderModuleDescriptor;
 use wgpu::VertexState;
 
 use crate::make_shader_source;
+use crate::Aabb;
 use crate::Camera3dGR;
 use crate::Color;
 use crate::GraphicsContext;
@@ -156,6 +158,18 @@ impl Gizmos {
                 color,
             });
         }
+    }
+
+    pub fn draw_aabb(&mut self, aabb: Aabb, color: Color) {
+        let a = aabb.min.extend(0.0);
+        let b = vec2(aabb.max.x, aabb.min.y).extend(0.0);
+        let c = aabb.max.extend(0.0);
+        let d = vec2(aabb.min.x, aabb.max.y).extend(0.0);
+
+        self.draw_line(a, b, color);
+        self.draw_line(b, c, color);
+        self.draw_line(c, d, color);
+        self.draw_line(d, a, color);
     }
 }
 

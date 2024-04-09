@@ -120,6 +120,12 @@ impl Aabb {
         Self { min, max }
     }
 
+    pub fn overlap_area(&self, other: &Aabb) -> f32 {
+        let width_overlap = self.max.x.min(other.max.x) - self.min.x.max(other.min.x);
+        let height_overlap = self.max.y.min(other.max.y) - self.min.y.max(other.min.y);
+        width_overlap.max(0.0) * height_overlap.max(0.0)
+    }
+
     /// scales the Aabb around its center.
     ///
     /// Scaling with a factor of 2 results in an Aabb twice as large.

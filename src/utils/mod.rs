@@ -5,7 +5,7 @@ pub mod camera_controllers;
 #[cfg(feature = "eguimod")]
 pub mod global_values;
 #[cfg(feature = "eguimod")]
-pub use global_values::{global_vals_get, global_vals_window};
+pub use global_values::{global_vals_get, global_vals_show_only, global_vals_window};
 
 /// Returns the next _^2 number such that it is greater or euqual to n.
 /// Is at least 2.

@@ -24,6 +24,10 @@ pub fn global_vals_get<T: EditableValue>(
     GLOBAL_VALUES.with(|m| m.get_mut().lazy_get(label, lazy))
 }
 
+pub fn global_vals_show_only(label: &'static str, value: String) {
+    GLOBAL_VALUES.with(|m| m.get_mut().set_show_only_val(label, value))
+}
+
 pub fn global_vals_window(ctx: &mut Context) {
     GLOBAL_VALUES.with(|m| m.get_mut().create_window(ctx));
 }
@@ -38,9 +42,16 @@ macro_rules! edit {
     }};
 }
 
+#[macro_export]
+macro_rules! show {
+    ($val:expr) => {{
+        $crate::utils::global_vals_show_only(stringify!($val), format!("{:?}", $val))
+    }};
+}
+
 struct GlobalValues {
     // contains: data pointer, params data pointer, ptr to the EditableValue::edit fn, ptr to a fn that converts the data into a string.
-    values: BTreeMap<
+    editable_values: BTreeMap<
         &'static str,
         (
             *mut (),
@@ -49,6 +60,7 @@ struct GlobalValues {
             fn(*mut ()) -> String,
         ),
     >,
+    show_only_values: BTreeMap<&'static str, String>,
 }
 
 unsafe impl Send for GlobalValues {}
@@ -56,7 +68,8 @@ unsafe impl Send for GlobalValues {}
 impl GlobalValues {
     fn new() -> Self {
         GlobalValues {
-            values: BTreeMap::new(),
+            editable_values: BTreeMap::new(),
+            show_only_values: BTreeMap::new(),
         }
     }
 
@@ -65,7 +78,7 @@ impl GlobalValues {
         label: &'static str,
         lazy: impl Fn() -> (T, Option<T::Params>),
     ) -> T {
-        match self.values.entry(label) {
+        match self.editable_values.entry(label) {
             Entry::Vacant(vacant) => {
                 let (t, t_params) = lazy();
                 let t_params = t_params.unwrap_or_else(|| T::Params::default_params());
@@ -100,7 +113,7 @@ impl GlobalValues {
 
     fn export_values(&self, path: &str) {
         let mut s = String::new();
-        for (label, (data_ptr, _, _, as_string_fn_ptr)) in self.values.iter() {
+        for (label, (data_ptr, _, _, as_string_fn_ptr)) in self.editable_values.iter() {
             let label = *label;
             let data_ptr = *data_ptr;
             let as_string_fn_ptr = *as_string_fn_ptr;
@@ -122,7 +135,7 @@ impl GlobalValues {
                 self.export_values("./editable_values_dump.txt");
             }
 
-            for (label, (data_ptr, params_ptr, edit_fn_ptr, _)) in self.values.iter_mut() {
+            for (label, (data_ptr, params_ptr, edit_fn_ptr, _)) in self.editable_values.iter_mut() {
                 let label = *label;
                 let data_ptr = *data_ptr;
                 let params_ptr = *params_ptr;
@@ -132,7 +145,16 @@ impl GlobalValues {
                 ui.label(label);
                 edit_fn_ptr(data_ptr, params_ptr, ui);
             }
+
+            for (label, val) in self.show_only_values.iter() {
+                ui.label(format!("{label}: {val}"));
+            }
         });
+        self.show_only_values.clear();
+    }
+
+    fn set_show_only_val(&mut self, label: &'static str, value: String) {
+        self.show_only_values.insert(label, value);
     }
 }
 
