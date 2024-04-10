@@ -214,6 +214,7 @@ impl ElementWithComputed {
         }
     }
 
+    #[inline(always)]
     pub fn computed_size(&self) -> DVec2 {
         match self {
             ElementWithComputed::Div((_, c)) => c.bounds.size,

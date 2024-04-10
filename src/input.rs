@@ -179,6 +179,25 @@ impl Input {
         self._last_frame_cursor_pos = self.cursor_pos;
     }
 
+    /// shorthand for `self.mouse_buttons.left().just_pressed()`
+    pub fn left_click(&self) -> bool {
+        self.mouse_buttons.left().just_pressed()
+    }
+
+    /// shorthand for `self.mouse_buttons.left().just_released()`
+    pub fn left_released(&self) -> bool {
+        self.mouse_buttons.left().just_released()
+    }
+
+    /// shorthand for `self.mouse_buttons.right().just_pressed()`
+    pub fn right_click(&self) -> bool {
+        self.mouse_buttons.right().just_pressed()
+    }
+
+    pub fn shift_pressed(&self) -> bool {
+        self.keys.is_pressed(KeyCode::ShiftLeft)
+    }
+
     pub fn wasd_vec(&self) -> glam::Vec2 {
         let mut v = Vec2::ZERO;
         if self.keys.is_pressed(KeyCode::KeyW) {

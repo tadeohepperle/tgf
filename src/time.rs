@@ -80,6 +80,7 @@ impl Time {
         self.stats.fps.min
     }
 
+    #[inline(always)]
     pub fn delta(&self) -> &Duration {
         &self.delta_time
     }
