@@ -12,7 +12,7 @@ use crate::ui::{
 
 use super::element_id::ElementId;
 use ahash::AHashMap;
-use glam::DVec2;
+use glam::{DVec2, Vec2};
 
 thread_local! {
     static STORED_ELEMENTS : ElementStore =  ElementStore::new();
@@ -39,10 +39,12 @@ impl ElementStore {
         }
     }
 
+    #[inline(always)]
     fn slab_alloc(&self) -> &mut SlabAllocator<StoredElement> {
         unsafe { &mut *self.slab_alloc.get() }
     }
 
+    #[inline(always)]
     pub fn id_hash_map(&self) -> &mut AHashMap<ElementId, SlabPtr<StoredElement>> {
         unsafe { &mut *self.id_hash_map.get() }
     }
@@ -64,6 +66,24 @@ impl ElementStore {
         STORED_ELEMENTS.with(|e| {
             let hash_map = e.id_hash_map();
             hash_map.keys().copied().collect()
+        })
+    }
+
+    #[inline(always)]
+    pub fn any_element_with_id_hovered(cursor_pos: DVec2) -> bool {
+        STORED_ELEMENTS.with(|e| {
+            let hash_map = e.id_hash_map();
+            for slab_ptr in hash_map.values() {
+                let element = unsafe { &*slab_ptr.as_ptr() };
+                let bounds = match &element.element {
+                    ElementWithComputed::Div((_, c)) => &c.bounds,
+                    ElementWithComputed::Text((_, c)) => &c.bounds,
+                };
+                if bounds.contains(&cursor_pos) {
+                    return true;
+                }
+            }
+            false
         })
     }
 }

@@ -52,6 +52,12 @@ impl ElementContext {
         bounds.contains(&self.cursor_pos.as_dvec2())
     }
 
+    /// useful for overlay ui in games, to not check for camera click raycasts into the scene ]
+    /// if some part of the ui is hovered in front of it
+    pub fn any_element_with_id_hovered(&self) -> bool {
+        ElementStore::any_element_with_id_hovered(self.cursor_pos.as_dvec2())
+    }
+
     pub fn get_computed_bounds(&self, id: impl Into<ElementId>) -> Option<ComputedBounds> {
         let id: ElementId = id.into();
         ElementStore::get_computed_bounds(&id)
