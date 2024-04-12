@@ -76,6 +76,7 @@ pub mod ext {
     pub use bytemuck;
     pub use glam;
     pub use image;
+    pub use slotmap;
     pub use smallvec;
     pub use tokio;
     pub use wgpu;

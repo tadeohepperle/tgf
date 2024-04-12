@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Index};
+use std::{fmt::Debug, ops::Index, path::PathBuf};
 
 use glam::{vec2, Vec2};
 use smallvec::SmallVec;
@@ -21,6 +21,8 @@ pub struct Input {
     _last_frame_cursor_pos: Vec2,
     cursor_delta: Vec2,
     scroll: Option<f32>,
+    dropped_file: Option<PathBuf>,
+    hovered_file: Option<PathBuf>,
 }
 
 impl Input {
@@ -96,8 +98,12 @@ impl Input {
             // /////////////////////////////////////////////////////////////////////////////
             WindowEvent::Moved(_) => {}
             WindowEvent::Destroyed => {}
-            WindowEvent::DroppedFile(_) => {}
-            WindowEvent::HoveredFile(_) => {}
+            WindowEvent::DroppedFile(path) => {
+                self.dropped_file = Some(path.clone());
+            }
+            WindowEvent::HoveredFile(path) => {
+                self.hovered_file = Some(path.clone());
+            }
             WindowEvent::HoveredFileCancelled => {}
             WindowEvent::Focused(_) => {}
             WindowEvent::ModifiersChanged(_) => {}
@@ -162,6 +168,8 @@ impl Input {
             cursor_delta: Default::default(),
             scroll: Default::default(),
             _last_frame_cursor_pos: Default::default(),
+            dropped_file: None,
+            hovered_file: None,
         }
     }
 
@@ -177,11 +185,21 @@ impl Input {
         self.cursor_just_moved = false;
         self.cursor_delta = Vec2::ZERO;
         self._last_frame_cursor_pos = self.cursor_pos;
+        self.dropped_file = None;
+        self.hovered_file = None;
     }
 
     /// shorthand for `self.mouse_buttons.left().just_pressed()`
     pub fn left_click(&self) -> bool {
         self.mouse_buttons.left().just_pressed()
+    }
+
+    pub fn ctrl_z_pressed(&self) -> bool {
+        self.keys().is_pressed(KeyCode::ControlLeft) && self.keys().just_pressed(KeyCode::KeyZ)
+    }
+
+    pub fn ctrl_s_pressed(&self) -> bool {
+        self.keys().is_pressed(KeyCode::ControlLeft) && self.keys().just_pressed(KeyCode::KeyS)
     }
 
     /// shorthand for `self.mouse_buttons.left().just_released()`
@@ -262,6 +280,14 @@ impl Input {
         }
     }
 
+    pub fn hovered_file(&self) -> Option<&PathBuf> {
+        self.hovered_file.as_ref()
+    }
+
+    pub fn dropped_file(&self) -> Option<&PathBuf> {
+        self.dropped_file.as_ref()
+    }
+
     pub fn close_requested(&self) -> bool {
         self.close_requested
     }
@@ -290,6 +316,7 @@ impl Input {
         self.resized
     }
 
+    #[inline]
     pub fn keys(&self) -> &KeyState {
         &self.keys
     }

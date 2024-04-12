@@ -58,8 +58,17 @@ impl Div {
         let width = self.width.map(|e| e.fixed(max_size.x));
         let height = self.height.map(|e| e.fixed(max_size.y));
 
-        let pad_x = self.padding.left + self.padding.right;
-        let pad_y = self.padding.top + self.padding.bottom;
+        let mut pad_x = self.padding.left + self.padding.right;
+        let mut pad_y = self.padding.top + self.padding.bottom;
+
+        // add gap between items on top of pad in x or y direction:
+        if self.children.len() > 1 && self.gap != 0.0 {
+            let additional_gap_space = self.gap * (self.children.len() - 1) as f64;
+            match self.axis {
+                Axis::X => pad_x += additional_gap_space,
+                Axis::Y => pad_y += additional_gap_space,
+            }
+        }
 
         let size = &mut computed.bounds.size;
         let content_size = &mut computed.content_size;
@@ -194,8 +203,13 @@ impl Div {
 
             let (main_size, cross_size) = A::disassemble(inner_size);
             let (main_content_size, _) = A::disassemble(content_size);
-            let (mut main_offset, main_step) =
-                main_offset_and_step(div.main_align, main_size, main_content_size, n_children);
+            let (mut main_offset, main_step) = main_offset_and_step(
+                div.main_align,
+                main_size,
+                main_content_size,
+                n_children,
+                div.gap,
+            );
 
             let calc_cross_offset = match div.cross_align {
                 Align::Start => |_: f64, _: f64| -> f64 { 0.0 },
@@ -233,27 +247,30 @@ impl Div {
         /// After each child with relative positioning it is incremented by the childs size, plus the step value.
         ///
         /// This function computes the initial main offset and this step value for different main axis alignment modes.
-        #[inline]
+        ///
+        /// Note: gap has no effect if `MainAlign::SpaceBetween`` or `MainAlign::SpaceAround`!
+        #[inline(always)]
         fn main_offset_and_step(
             main_align: MainAlign,
             main_size: f64,
             main_content_size: f64,
             n_children: usize,
+            gap: f64,
         ) -> (f64, f64) {
             let offset: f64; // initial offset on main axis for the first child
             let step: f64; //  step that gets added for each child on main axis after its own size on main axis.
             match main_align {
                 MainAlign::Start => {
                     offset = 0.0;
-                    step = 0.0;
+                    step = gap;
                 }
                 MainAlign::Center => {
                     offset = (main_size - main_content_size) * 0.5;
-                    step = 0.0;
+                    step = gap;
                 }
                 MainAlign::End => {
                     offset = main_size - main_content_size;
-                    step = 0.0;
+                    step = gap;
                 }
                 MainAlign::SpaceBetween => {
                     offset = 0.0;

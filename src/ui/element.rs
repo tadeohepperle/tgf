@@ -138,6 +138,12 @@ pub struct DivStyle {
     pub texture: DivTexture,
     pub z_index: i16,
     pub shadow: DivShadow,
+    /// gap is padding inserted *between* children of this div.
+    /// If own size is wrapping children (width/height in main axis is None), this affects the size of the div.
+    /// This avoids having to add placeholder v_fill() or h_fill() divs in lists of elements.
+    ///
+    /// Note: gap has no effect if `MainAlign::SpaceBetween`` or `MainAlign::SpaceAround`!
+    pub gap: f64,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -190,6 +196,7 @@ impl Default for DivStyle {
             texture: DivTexture::None,
             z_index: 0,
             shadow: DivShadow::ZERO,
+            gap: 0.0,
         }
     }
 }
