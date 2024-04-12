@@ -202,6 +202,10 @@ impl Input {
         self.keys().is_pressed(KeyCode::ControlLeft) && self.keys().just_pressed(KeyCode::KeyS)
     }
 
+    pub fn ctrl_pressed(&self) -> bool {
+        self.keys().is_pressed(KeyCode::ControlLeft)
+    }
+
     /// shorthand for `self.mouse_buttons.left().just_released()`
     pub fn left_released(&self) -> bool {
         self.mouse_buttons.left().just_released()
