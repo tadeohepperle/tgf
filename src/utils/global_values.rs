@@ -2,6 +2,7 @@ use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
+use egui::Checkbox;
 use glam::Vec3;
 
 use crate::egui::Context;
@@ -257,5 +258,13 @@ impl EditableValue for Vec3 {
 impl DefaultParams for (Vec3, Vec3) {
     fn default_params() -> Self {
         (Vec3::splat(-100.0), Vec3::splat(100.0))
+    }
+}
+
+impl EditableValue for bool {
+    type Params = ();
+
+    fn edit(&mut self, params: &Self::Params, ui: &mut egui::Ui) {
+        ui.add(Checkbox::new(self, "active"));
     }
 }
