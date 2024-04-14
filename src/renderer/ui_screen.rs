@@ -86,6 +86,9 @@ impl UiScreenRenderer {
         batches: &'a Vec<Batch>,
         screen: &'a ScreenGR,
     ) {
+        if batches.is_empty() {
+            return;
+        }
         pass.set_bind_group(0, screen.bind_group(), &[]);
 
         // 6 indices to draw two triangles

@@ -137,7 +137,7 @@ impl DefaultWorld {
         self.input.end_frame();
     }
 
-    fn resize(&mut self, size: PhysicalSize<u32>) {
+    pub fn resize(&mut self, size: PhysicalSize<u32>) {
         self.ctx.resize(size);
         self.camera.resize(size);
         self.screen.resize(size);
@@ -146,7 +146,7 @@ impl DefaultWorld {
         self.ui.resize_scaled_to_fixed_height(size);
     }
 
-    fn prepare(&mut self, encoder: &mut wgpu::CommandEncoder) {
+    pub fn prepare(&mut self, encoder: &mut wgpu::CommandEncoder) {
         self.color_renderer.prepare();
         self.gizmos.prepare();
         self.camera_gr.prepare(&self.ctx.queue, &self.camera);
