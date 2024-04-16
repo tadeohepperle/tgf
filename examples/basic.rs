@@ -1,6 +1,6 @@
 use std::{rc::Rc, sync::Arc};
 
-use glam::{Quat, Vec3};
+use glam::{Quat, Vec2, Vec3};
 use rand::{thread_rng, Rng};
 use tgf::{
     edit,
@@ -8,8 +8,8 @@ use tgf::{
     ui::{div, Align, SdfFont, TextSection},
     utils::camera_controllers::FlyCamController,
     AppT, Bloom, Camera3d, Camera3dGR, Color, ColorMeshRenderer, DefaultWorld, Egui, Gizmos,
-    GraphicsContext, Input, KeyCode, RenderFormat, Runner, Screen, ScreenGR, ScreenTextures, Time,
-    ToneMapping, Transform, Window,
+    GraphicsContext, Input, KeyCode, Lerp, RenderFormat, Runner, Screen, ScreenGR, ScreenTextures,
+    Time, ToneMapping, Transform, Window,
 };
 use wgpu::{RenderPassColorAttachment, RenderPassDescriptor};
 

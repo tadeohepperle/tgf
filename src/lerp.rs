@@ -1,5 +1,7 @@
 use glam::{DVec2, DVec3, Quat, Vec2, Vec3};
 
+pub use tgf_macros::Lerp;
+
 pub trait Lerp {
     fn lerp(&self, other: &Self, factor: f32) -> Self;
 }
