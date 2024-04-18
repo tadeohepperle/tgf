@@ -19,6 +19,16 @@ pub fn next_pow2_number(n: usize) -> usize {
     }
 }
 
+#[inline(always)]
+pub fn center_offset(idx: usize, total: usize) -> f32 {
+    (idx as f32) - ((total as f32) - 1.0) / 2.0
+}
+
+#[inline(always)]
+pub fn center_offset_f(idx_f: f32, total_f: f32) -> f32 {
+    (idx_f) - ((total_f) - 1.0) / 2.0
+}
+
 pub fn rc_addr_as_u64<T>(rc: &Rc<T>) -> u64 {
     let ptr_to_rc = rc as *const Rc<T> as *const u64;
     unsafe { *ptr_to_rc }

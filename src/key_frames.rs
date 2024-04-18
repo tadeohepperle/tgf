@@ -6,7 +6,7 @@ pub struct KeyFrames<T: Clone + Lerp> {
     /// for each point in time, the value T, that should be held at that time.
     /// Should contain values from 0.0 to 1.0
     /// ascending, e.g. 0.0 : -5.0, 0.1 : 7.0, 1.0
-    frames: SmallVec<[(f32, T, Easing); 4]>,
+    pub frames: SmallVec<[(f32, T, Easing); 4]>,
 }
 
 impl<T: Clone + Lerp> KeyFrames<T> {
@@ -42,7 +42,7 @@ impl<T: Clone + Lerp> KeyFrames<T> {
         self
     }
 
-    pub fn get(&self, t_current: f32) -> T {
+    pub fn sample(&self, t_current: f32) -> T {
         // get two points to interpolate between:
 
         // find point with t greater than current_t:
@@ -116,8 +116,8 @@ mod tests {
     #[test]
     fn test_macro() {
         let frames = key_frames!(0.0 => -5.0, 3.0 => -10.0, 4.0 => 20.0);
-        assert_eq!(frames.get(-22.0), -5.0);
-        assert_eq!(frames.get(5.0), 20.0);
-        assert_eq!(frames.get(3.5), 5.0); // between frame 2 and 3
+        assert_eq!(frames.sample(-22.0), -5.0);
+        assert_eq!(frames.sample(5.0), 20.0);
+        assert_eq!(frames.sample(3.5), 5.0); // between frame 2 and 3
     }
 }

@@ -21,6 +21,7 @@ pub struct SlabAllocator<T> {
     marker: std::marker::PhantomData<T>,
 }
 
+#[derive(Debug)]
 pub struct SlabPtr<T>(NonNull<T>);
 
 impl<T> SlabPtr<T> {
