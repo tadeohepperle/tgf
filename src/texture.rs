@@ -19,7 +19,13 @@ pub fn white_px_texture_cached(ctx: &GraphicsContext) -> &'static BindableTextur
     WHITE_PX_TEXURE_CACHED.get_or_init(|| {
         let mut white_px = RgbaImage::new(1, 1);
         white_px.get_pixel_mut(0, 0).0 = [255, 255, 255, 255];
-        let texture = Texture::from_image(&ctx.device, &ctx.queue, &white_px);
+        let texture = Texture::from_image(
+            &ctx.device,
+            &ctx.queue,
+            &white_px,
+            wgpu::FilterMode::Linear,
+            wgpu::AddressMode::Repeat,
+        );
         BindableTexture::new(&ctx.device, texture)
     })
 }
@@ -116,9 +122,7 @@ impl BindableTexture {
 }
 
 pub fn create_white_px_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> BindableTexture {
-    let mut white_px = RgbaImage::new(1, 1);
-    white_px.get_pixel_mut(0, 0).0 = [255, 255, 255, 255];
-    let texture = Texture::from_image(device, queue, &white_px);
+    let texture = Texture::create_white_px_texture(device, queue);
     BindableTexture::new(device, texture)
 }
 
@@ -140,26 +144,21 @@ impl Texture {
     pub fn create_white_px_texture(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
         let mut white_px = RgbaImage::new(1, 1);
         white_px.get_pixel_mut(0, 0).0 = [255, 255, 255, 255];
-        Self::from_image(device, queue, &white_px)
+        Self::from_image(
+            device,
+            queue,
+            &white_px,
+            wgpu::FilterMode::Nearest,
+            wgpu::AddressMode::Repeat,
+        )
     }
 
-    pub fn from_image_pixel_perfect(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        rgba: &RgbaImage,
-    ) -> Self {
-        Self::_from_image(device, queue, rgba, wgpu::FilterMode::Nearest)
-    }
-
-    pub fn from_image(device: &wgpu::Device, queue: &wgpu::Queue, rgba: &RgbaImage) -> Self {
-        Self::_from_image(device, queue, rgba, wgpu::FilterMode::Linear)
-    }
-
-    pub fn _from_image(
+    pub fn from_image(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         rgba: &RgbaImage,
         filter_mode: wgpu::FilterMode,
+        address_move: wgpu::AddressMode,
     ) -> Self {
         let dimensions = rgba.dimensions();
 
@@ -170,8 +169,15 @@ impl Texture {
             height: rgba.height(),
             depth_or_array_layers: 1,
         };
-        let texture =
-            Self::create_2d_texture(device, size.width, size.height, format, usage, filter_mode);
+        let texture = Self::create_2d_texture(
+            device,
+            size.width,
+            size.height,
+            format,
+            usage,
+            filter_mode,
+            address_move,
+        );
 
         queue.write_texture(
             wgpu::ImageCopyTexture {
@@ -199,6 +205,7 @@ impl Texture {
         format: wgpu::TextureFormat,
         usage: wgpu::TextureUsages,
         mag_filter: wgpu::FilterMode,
+        address_move: wgpu::AddressMode,
     ) -> Self {
         let size = wgpu::Extent3d {
             width,
@@ -212,6 +219,7 @@ impl Texture {
             usage,
             wgpu::TextureDimension::D2,
             mag_filter,
+            address_move,
         )
     }
 
@@ -222,6 +230,7 @@ impl Texture {
         usage: wgpu::TextureUsages,
         dimension: wgpu::TextureDimension,
         mag_filter: wgpu::FilterMode,
+        address_move: wgpu::AddressMode,
     ) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
@@ -236,9 +245,9 @@ impl Texture {
 
         let view = texture.create_view(&Default::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
+            address_mode_u: address_move,
+            address_mode_v: address_move,
+            address_mode_w: address_move,
             mag_filter,
             min_filter: wgpu::FilterMode::Nearest,
             mipmap_filter: wgpu::FilterMode::Nearest,
