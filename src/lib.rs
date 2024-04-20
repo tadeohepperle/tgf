@@ -22,6 +22,7 @@ pub mod texture;
 pub mod time;
 pub mod transform;
 pub mod ui;
+pub mod uniforms;
 pub mod utils;
 pub mod vertex;
 pub mod watcher;
@@ -64,7 +65,7 @@ pub use texture::{
     create_white_px_texture, rgba_bind_group_layout_cached, rgba_bind_group_layout_msaa4_cached,
     BindableTexture, Texture,
 };
-pub use time::{Time, TimeStats};
+pub use time::{Time, TimeGR, TimeRaw, TimeStats};
 pub use transform::{Transform, TransformRaw};
 pub use vertex::{VertexT, VertsLayout};
 pub use watcher::FileChangeWatcher;

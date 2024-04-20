@@ -5,28 +5,26 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use crate::utils::next_pow2_number;
 
 pub trait ToRaw {
-    type Raw: Copy + bytemuck::Pod + bytemuck::Zeroable + PartialEq;
+    type Raw: Copy + bytemuck::Pod + bytemuck::Zeroable;
     fn to_raw(&self) -> Self::Raw;
 }
 
 pub trait BufferT {}
 
-pub struct UniformBuffer<U: Copy + bytemuck::Pod + bytemuck::Zeroable + PartialEq> {
+pub struct UniformBuffer<U: Copy + bytemuck::Pod + bytemuck::Zeroable> {
     pub value: U,
     buffer: wgpu::Buffer,
     pub name: Option<Cow<'static, str>>,
 }
 
-impl<U: Copy + bytemuck::Pod + bytemuck::Zeroable + PartialEq> UniformBuffer<U> {
+impl<U: Copy + bytemuck::Pod + bytemuck::Zeroable> UniformBuffer<U> {
     pub fn buffer(&self) -> &wgpu::Buffer {
         &self.buffer
     }
 
     pub fn update_and_prepare(&mut self, value: U, queue: &wgpu::Queue) {
-        if value != self.value {
-            self.value = value;
-            queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[self.value]));
-        }
+        self.value = value;
+        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[self.value]));
     }
 
     pub fn new(value: U, device: &wgpu::Device) -> Self {

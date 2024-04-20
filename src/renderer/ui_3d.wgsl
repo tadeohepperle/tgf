@@ -1,16 +1,3 @@
-// Attention:
-//
-// This file is only partial. It is concatenated with "coal-ui/src/ui.wgsl" as runtime. 
-//
-
-
-struct Camera {
-    view_pos: vec4<f32>,
-    view_proj: mat4x4<f32>,
-}
-@group(0) @binding(0)
-var<uniform> camera: Camera;
-
 struct PushData {
    col1: vec4<f32>,
    col2: vec4<f32>,

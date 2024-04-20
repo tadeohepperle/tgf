@@ -1,12 +1,3 @@
-struct ScreenSpace {
-    width: f32,
-    height: f32,
-    aspect: f32,
-}
-
-@group(0) @binding(0)
-var<uniform> screen: ScreenSpace;
-
 @group(1)
 @binding(0)
 var hdr_image: texture_2d<f32>;

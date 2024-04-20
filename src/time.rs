@@ -1,9 +1,12 @@
 use std::{
     collections::VecDeque,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
 use smallvec::{smallvec, SmallVec};
+
+use crate::{GraphicsContext, ToRaw, UniformBuffer};
 
 const CACHED_DELTA_TIMES_COUNT: usize = 20;
 
@@ -146,5 +149,81 @@ impl Stats {
         let var = (sqsum / len) - ((sum / len) * (sum / len));
         let std = var.sqrt();
         Stats { max, min, avg, std }
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable, PartialEq)]
+
+pub struct TimeRaw {
+    /// in seconds
+    delta: f32,
+    /// in seconds
+    total: f32,
+    frame_count: u32,
+}
+
+impl ToRaw for Time {
+    type Raw = TimeRaw;
+
+    fn to_raw(&self) -> Self::Raw {
+        TimeRaw {
+            delta: self.delta_time.as_secs_f32(),
+            total: self.total_time.as_secs_f32(),
+            frame_count: self.frame_count as u32,
+        }
+    }
+}
+
+pub struct TimeGR {
+    uniform: UniformBuffer<TimeRaw>,
+    bind_group: wgpu::BindGroup,
+    bind_group_layout: Arc<wgpu::BindGroupLayout>,
+}
+
+impl TimeGR {
+    pub fn new(ctx: &GraphicsContext, time: &Time) -> Self {
+        let uniform = UniformBuffer::new(time.to_raw(), &ctx.device);
+
+        let layout_descriptor = wgpu::BindGroupLayoutDescriptor {
+            label: Some("Time BindGroupLayout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        };
+        let bind_group_layout = Arc::new(ctx.device.create_bind_group_layout(&layout_descriptor));
+        let bind_group = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Time BindGroup"),
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform.buffer().as_entire_binding(),
+            }],
+        });
+
+        Self {
+            uniform,
+            bind_group_layout,
+            bind_group,
+        }
+    }
+
+    pub fn prepare(&mut self, queue: &wgpu::Queue, time: &Time) {
+        self.uniform.update_and_prepare(time.to_raw(), queue);
+    }
+
+    pub fn bind_group_layout(&self) -> &Arc<wgpu::BindGroupLayout> {
+        &self.bind_group_layout
+    }
+
+    pub fn bind_group(&self) -> &wgpu::BindGroup {
+        &self.bind_group
     }
 }

@@ -35,7 +35,8 @@ pub struct Ui3DRenderer {
     camera_layout: Arc<wgpu::BindGroupLayout>,
 }
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("ui.wgsl", "ui_3d.wgsl", "alpha_sdf.wgsl");
+const SHADER_SOURCE: ShaderSource =
+    make_shader_source!("uniforms.wgsl", "ui.wgsl", "ui_3d.wgsl", "alpha_sdf.wgsl");
 
 impl Ui3DRenderer {
     /// shader source should contains:

@@ -1,11 +1,3 @@
-struct Camera {
-    view_pos: vec4<f32>,
-    view_proj: mat4x4<f32>,
-}
-@group(0) @binding(0)
-var<uniform> camera: Camera;
-
-
 @group(1) @binding(0)
 var t_diffuse: texture_2d<f32>;
 @group(1) @binding(1)

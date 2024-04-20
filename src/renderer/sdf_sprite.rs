@@ -33,7 +33,8 @@ impl Default for AlphaSdfParams {
     }
 }
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("alpha_sdf.wgsl", "sdf_sprite.wgsl");
+const SHADER_SOURCE: ShaderSource =
+    make_shader_source!("uniforms.wgsl", "alpha_sdf.wgsl", "sdf_sprite.wgsl");
 /// Immediate Mode batches Sprite Rendering.
 pub struct SdfSpriteRenderer {
     instances: Vec<SpriteRaw>,

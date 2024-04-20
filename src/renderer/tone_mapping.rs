@@ -14,7 +14,8 @@ pub struct ToneMapping {
     output_format: wgpu::TextureFormat,
 }
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("screen.wgsl", "tonemapping.wgsl");
+const SHADER_SOURCE: ShaderSource =
+    make_shader_source!("uniforms.wgsl", "screen.wgsl", "tonemapping.wgsl");
 
 impl ToneMapping {
     pub fn new(

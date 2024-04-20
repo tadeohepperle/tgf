@@ -8,6 +8,8 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
+use crate::ToRaw;
+
 #[derive(Debug)]
 pub struct Input {
     keys: KeyState,
@@ -486,6 +488,21 @@ impl KeyState {
                 self.just_pressed.push(value);
                 self.pressed.push(value);
             }
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+pub struct InputRaw {
+    cursor_pos: Vec2,
+}
+
+impl ToRaw for Input {
+    type Raw = InputRaw;
+    fn to_raw(&self) -> Self::Raw {
+        InputRaw {
+            cursor_pos: self.cursor_pos,
         }
     }
 }

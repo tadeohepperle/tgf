@@ -1,5 +1,3 @@
-
-
 @group(0)
 @binding(0)
 var hdr_image: texture_2d<f32>;

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::{
-    make_shader_source, rgba_bind_group_layout_cached, GraphicsContext, HotReload, ScreenGR,
-    ShaderCache, ShaderSource, VertexT, VertsLayout,
+    make_shader_source, rgba_bind_group_layout_cached, uniforms::Uniforms, GraphicsContext,
+    HotReload, ScreenGR, ShaderCache, ShaderSource, VertexT, VertsLayout,
 };
 
 use wgpu::{RenderPipelineDescriptor, TextureView, VertexState};
@@ -11,36 +11,33 @@ use crate::ui::batching::{
     AlphaSdfRectRaw, Batch, BatchKind, ElementBatchesGR, GlyphRaw, RectRaw, TexturedRectRaw,
 };
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("ui.wgsl", "alpha_sdf.wgsl");
+const SHADER_SOURCE: ShaderSource =
+    make_shader_source!("uniforms.wgsl", "ui.wgsl", "alpha_sdf.wgsl");
 
 pub struct UiScreenRenderer {
     rect_pipeline: wgpu::RenderPipeline,
     textured_rect_pipeline: wgpu::RenderPipeline,
     alpha_sdf_rect_pipeline: wgpu::RenderPipeline,
     glyph_pipeline: wgpu::RenderPipeline,
-    screen_layout: Arc<wgpu::BindGroupLayout>,
     ctx: GraphicsContext,
 }
 
 impl UiScreenRenderer {
     /// The shader source should include `ui.wgsl` and `alpha_sdf.wgsl`.
-    pub fn new(ctx: &GraphicsContext, screen: &ScreenGR, shader_cache: &mut ShaderCache) -> Self {
+    pub fn new(ctx: &GraphicsContext, shader_cache: &mut ShaderCache) -> Self {
         let shader = shader_cache.register(SHADER_SOURCE);
 
         let device = &ctx.device;
-        let screen_layout = screen.bind_group_layout().clone();
-        let glyph_pipeline = create_glyph_pipeline(&shader, device, &screen_layout);
-        let rect_pipeline = create_rect_pipeline(&shader, device, &screen_layout);
-        let textured_rect_pipeline = create_textured_rect_pipeline(&shader, device, &screen_layout);
-        let alpha_sdf_rect_pipeline =
-            create_alpha_sdf_rect_pipeline(&shader, device, &screen_layout);
+        let glyph_pipeline = create_glyph_pipeline(&shader, device);
+        let rect_pipeline = create_rect_pipeline(&shader, device);
+        let textured_rect_pipeline = create_textured_rect_pipeline(&shader, device);
+        let alpha_sdf_rect_pipeline = create_alpha_sdf_rect_pipeline(&shader, device);
 
         UiScreenRenderer {
             rect_pipeline,
             textured_rect_pipeline,
             alpha_sdf_rect_pipeline,
             glyph_pipeline,
-            screen_layout,
             ctx: ctx.clone(),
         }
     }
@@ -51,10 +48,10 @@ impl UiScreenRenderer {
         view: &'a TextureView,
         buffers: &'a ElementBatchesGR,
         batches: &'a Vec<Batch>,
-        screen: &'a ScreenGR,
+        uniforms: &'a Uniforms,
     ) {
         let mut pass = self.new_render_pass(encoder, view);
-        self.render_batches(&mut pass, buffers, batches, screen);
+        self.render_batches(&mut pass, buffers, batches, uniforms);
     }
 
     pub fn new_render_pass<'a>(
@@ -84,12 +81,12 @@ impl UiScreenRenderer {
         pass: &mut wgpu::RenderPass<'a>,
         buffers: &'a ElementBatchesGR,
         batches: &'a Vec<Batch>,
-        screen: &'a ScreenGR,
+        uniforms: &'a Uniforms,
     ) {
         if batches.is_empty() {
             return;
         }
-        pass.set_bind_group(0, screen.bind_group(), &[]);
+        pass.set_bind_group(0, uniforms.bind_group(), &[]);
 
         // 6 indices to draw two triangles
         const VERTEX_COUNT: u32 = 6;
@@ -134,68 +131,71 @@ impl HotReload for UiScreenRenderer {
 
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
         let device = &self.ctx.device;
-        let screen_layout = &self.screen_layout;
-        self.glyph_pipeline = create_glyph_pipeline(&shader, device, screen_layout);
-        self.rect_pipeline = create_rect_pipeline(&shader, device, screen_layout);
-        self.textured_rect_pipeline = create_textured_rect_pipeline(&shader, device, screen_layout);
-        self.alpha_sdf_rect_pipeline =
-            create_alpha_sdf_rect_pipeline(&shader, device, screen_layout);
+        self.glyph_pipeline = create_glyph_pipeline(&shader, device);
+        self.rect_pipeline = create_rect_pipeline(&shader, device);
+        self.textured_rect_pipeline = create_textured_rect_pipeline(&shader, device);
+        self.alpha_sdf_rect_pipeline = create_alpha_sdf_rect_pipeline(&shader, device);
     }
 }
 
 fn create_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    screen_layout: &wgpu::BindGroupLayout,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<RectRaw>(
         shader_module,
         "rect_vs",
         "rect_fs",
         device,
-        &[screen_layout],
+        &[Uniforms::cached_layout()],
     )
 }
 
 fn create_textured_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    screen_layout: &wgpu::BindGroupLayout,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<TexturedRectRaw>(
         shader_module,
         "textured_rect_vs",
         "textured_rect_fs",
         device,
-        &[screen_layout, rgba_bind_group_layout_cached(device)],
+        &[
+            Uniforms::cached_layout(),
+            rgba_bind_group_layout_cached(device),
+        ],
     )
 }
 
 fn create_alpha_sdf_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    screen_layout: &wgpu::BindGroupLayout,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<AlphaSdfRectRaw>(
         shader_module,
         "alpha_sdf_rect_vs",
         "alpha_sdf_fs",
         device,
-        &[screen_layout, rgba_bind_group_layout_cached(device)],
+        &[
+            Uniforms::cached_layout(),
+            rgba_bind_group_layout_cached(device),
+        ],
     )
 }
 
 fn create_glyph_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    screen_layout: &wgpu::BindGroupLayout,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<GlyphRaw>(
         shader_module,
         "glyph_vs",
         "glyph_fs",
         device,
-        &[screen_layout, rgba_bind_group_layout_cached(device)],
+        &[
+            Uniforms::cached_layout(),
+            rgba_bind_group_layout_cached(device),
+        ],
     )
 }
 

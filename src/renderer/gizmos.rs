@@ -11,6 +11,7 @@ use wgpu::ShaderModuleDescriptor;
 use wgpu::VertexState;
 
 use crate::make_shader_source;
+use crate::uniforms::Uniforms;
 use crate::Aabb;
 use crate::Camera3dGR;
 use crate::Color;
@@ -24,14 +25,13 @@ use crate::VertsLayout;
 
 use super::RenderFormat;
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("gizmos.wgsl");
+const SHADER_SOURCE: ShaderSource = make_shader_source!("uniforms.wgsl", "gizmos.wgsl");
 
 pub struct Gizmos {
     /// immediate vertices, written to vertex_buffer every frame.
     vertex_queue: Vec<Vertex>,
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: GrowableBuffer<Vertex>,
-    camera_layout: Arc<wgpu::BindGroupLayout>,
     ctx: GraphicsContext,
     render_format: RenderFormat,
 }
@@ -39,25 +39,18 @@ pub struct Gizmos {
 impl Gizmos {
     pub fn new(
         ctx: &GraphicsContext,
-        camera: &Camera3dGR,
         render_format: RenderFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
         let vertex_buffer = GrowableBuffer::new(&ctx.device, 256, BufferUsages::VERTEX);
 
         let shader = shader_cache.register(SHADER_SOURCE);
-        let pipeline = create_pipeline(
-            &shader,
-            &ctx.device,
-            camera.bind_group_layout(),
-            render_format,
-        );
+        let pipeline = create_pipeline(&shader, &ctx.device, render_format);
         Gizmos {
             pipeline,
             vertex_queue: vec![],
             vertex_buffer,
             ctx: ctx.clone(),
-            camera_layout: camera.bind_group_layout().clone(),
             render_format,
         }
     }
@@ -65,13 +58,13 @@ impl Gizmos {
     pub fn render<'encoder>(
         &'encoder self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        camera: &'encoder Camera3dGR,
+        uniforms: &'encoder Uniforms,
     ) {
         if self.vertex_buffer.len() == 0 {
             return;
         }
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, camera.bind_group(), &[]);
+        render_pass.set_bind_group(0, uniforms.bind_group(), &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.buffer().slice(..));
         render_pass.draw(0..self.vertex_buffer.len() as u32, 0..1);
     }
@@ -179,12 +172,7 @@ impl HotReload for Gizmos {
     }
 
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.pipeline = create_pipeline(
-            shader,
-            &self.ctx.device,
-            &self.camera_layout,
-            self.render_format,
-        );
+        self.pipeline = create_pipeline(shader, &self.ctx.device, self.render_format);
     }
 }
 
@@ -207,7 +195,6 @@ impl VertexT for Vertex {
 fn create_pipeline(
     shader: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera_layout: &wgpu::BindGroupLayout,
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     let label = "Gizmos";
@@ -215,7 +202,7 @@ fn create_pipeline(
 
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(&format!("{label} PipelineLayout")),
-        bind_group_layouts: &[camera_layout],
+        bind_group_layouts: &[Uniforms::cached_layout()],
         push_constant_ranges: &[],
     });
 

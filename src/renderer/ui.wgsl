@@ -1,14 +1,4 @@
-// Inspired by: https://www.shadertoy.com/view/fsdyzB
-struct ScreenSize {
-    width: f32,
-    height: f32,
-    aspect: f32,
-}
-
 const UI_REFERENCE_Y_HEIGHT: f32 = 1080.0;
-
-@group(0) @binding(0)
-var<uniform> screen: ScreenSize;
 
 @group(1) @binding(0)
 var t_diffuse: texture_2d<f32>;

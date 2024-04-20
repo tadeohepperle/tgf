@@ -9,7 +9,7 @@ use wgpu::{util::RenderEncoder, RenderPass, ShaderStages};
 
 use super::{ParticleSystem, RawParticle};
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("particle.wgsl");
+const SHADER_SOURCE: ShaderSource = make_shader_source!("../uniforms.wgsl", "particle.wgsl");
 
 pub struct ParticleRenderer {
     pipeline: wgpu::RenderPipeline,

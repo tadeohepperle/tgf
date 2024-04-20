@@ -2,7 +2,7 @@ use std::{borrow::Cow, sync::Arc};
 
 use crate::{
     graphics_context::GraphicsContext, make_shader_source, rgba_bind_group_layout_cached,
-    HdrTexture, HotReload, ScreenGR, ShaderCache, ShaderSource,
+    uniforms::Uniforms, HdrTexture, HotReload, ScreenGR, ShaderCache, ShaderSource,
 };
 use wgpu::{BindGroupLayout, BlendComponent, BlendFactor, BlendOperation, BlendState};
 use winit::dpi::PhysicalSize;
@@ -53,12 +53,13 @@ pub struct Bloom {
     screen_layout: Arc<wgpu::BindGroupLayout>,
 }
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("screen.wgsl", "bloom.wgsl");
+const SHADER_SOURCE: ShaderSource =
+    make_shader_source!("uniforms.wgsl", "screen.wgsl", "bloom.wgsl");
 
 impl Bloom {
     pub fn new(
         ctx: &GraphicsContext,
-        screen: &ScreenGR,
+        screen: &Uniforms,
         color_format: wgpu::TextureFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
@@ -103,7 +104,7 @@ impl Bloom {
         encoder: &'e mut wgpu::CommandEncoder,
         input_texture: &wgpu::BindGroup,
         output_texture: &wgpu::TextureView,
-        screen: &ScreenGR,
+        uniforms: &'e Uniforms,
     ) {
         if !self.settings.activated {
             return;
@@ -114,7 +115,7 @@ impl Bloom {
             encoder: &'e mut wgpu::CommandEncoder,
             input_texture: &'e wgpu::BindGroup,
             output_texture: &'e wgpu::TextureView,
-            screen: &'e ScreenGR,
+            uniforms: &'e Uniforms,
             pipeline: &'e wgpu::RenderPipeline,
         ) {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -132,7 +133,7 @@ impl Bloom {
                 occlusion_query_set: None,
             });
             pass.set_pipeline(pipeline);
-            pass.set_bind_group(0, screen.bind_group(), &[]);
+            pass.set_bind_group(0, uniforms.bind_group(), &[]);
             pass.set_bind_group(1, input_texture, &[]);
             pass.draw(0..3, 0..1);
         }
@@ -146,7 +147,7 @@ impl Bloom {
             encoder,
             input_texture,
             self.bloom_textures.levels[0].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_threshold_pipeline,
         );
         run_screen_render_pass(
@@ -154,7 +155,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[0].bind_group(),
             self.bloom_textures.levels[1].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
         run_screen_render_pass(
@@ -162,7 +163,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[1].bind_group(),
             self.bloom_textures.levels[2].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
         run_screen_render_pass(
@@ -170,7 +171,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[2].bind_group(),
             self.bloom_textures.levels[3].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
 
@@ -179,7 +180,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[3].bind_group(),
             self.bloom_textures.levels[4].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
 
@@ -188,7 +189,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[4].bind_group(),
             self.bloom_textures.levels[5].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
 
@@ -197,7 +198,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[5].bind_group(),
             self.bloom_textures.levels[6].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
 
@@ -206,7 +207,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[6].bind_group(),
             self.bloom_textures.levels[7].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
 
@@ -215,7 +216,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[7].bind_group(),
             self.bloom_textures.levels[8].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.downsample_pipeline,
         );
 
@@ -228,7 +229,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[8].bind_group(),
             self.bloom_textures.levels[7].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -237,7 +238,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[7].bind_group(),
             self.bloom_textures.levels[6].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -246,7 +247,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[6].bind_group(),
             self.bloom_textures.levels[5].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -255,7 +256,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[5].bind_group(),
             self.bloom_textures.levels[4].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -264,7 +265,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[4].bind_group(),
             self.bloom_textures.levels[3].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -273,7 +274,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[3].bind_group(),
             self.bloom_textures.levels[2].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -282,7 +283,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[2].bind_group(),
             self.bloom_textures.levels[1].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -291,7 +292,7 @@ impl Bloom {
             encoder,
             self.bloom_textures.levels[1].bind_group(),
             self.bloom_textures.levels[0].view(),
-            screen,
+            uniforms,
             &self.bloom_pipelines.upsample_pipeline,
         );
 
@@ -323,7 +324,7 @@ impl Bloom {
         });
         pass.set_pipeline(&self.bloom_pipelines.final_upsample_pipeline);
         pass.set_blend_constant(blend_factor);
-        pass.set_bind_group(0, screen.bind_group(), &[]);
+        pass.set_bind_group(0, uniforms.bind_group(), &[]);
         pass.set_bind_group(1, self.bloom_textures.levels[0].bind_group(), &[]);
         pass.draw(0..3, 0..1);
     }

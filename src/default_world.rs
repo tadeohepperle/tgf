@@ -3,7 +3,9 @@ use std::sync::Arc;
 use crate::{
     edit,
     renderer::{screen_textures, ui_screen::UiScreenRenderer},
+    time::TimeGR,
     ui::{batching::ElementBatchesGR, div, Board, REFERENCE_SCREEN_SIZE_D},
+    uniforms::Uniforms,
     utils::camera_controllers::FlyCamController,
     AppT, Bloom, Camera3d, Camera3dGR, Color, ColorMeshRenderer, Egui, Gizmos, GraphicsContext,
     Input, KeyCode, RenderFormat, Runner, RunnerCallbacks, Screen, ScreenGR, ScreenTextures,
@@ -31,9 +33,8 @@ pub struct DefaultWorld {
     pub input: Input,
     pub screen_textures: ScreenTextures,
     pub camera: Camera3d,
-    pub camera_gr: Camera3dGR,
     pub screen: Screen,
-    pub screen_gr: ScreenGR,
+    pub uniforms: Uniforms,
     pub bloom: Bloom,
     pub tone_mapping: ToneMapping,
     pub egui: crate::Egui,
@@ -71,29 +72,28 @@ impl DefaultWorld {
 
         let mut camera = Camera3d::new(window.inner_size().width, window.inner_size().height);
         camera.transform.pos.x = -70.0;
-        let camera_gr = Camera3dGR::new(&ctx, &camera);
 
         let screen = Screen::new(&window);
-        let screen_gr = ScreenGR::new(&ctx, &screen);
+        let time = Time::new();
+
+        let input = Input::new();
+
+        let uniforms = Uniforms::new(&ctx, &camera, &screen, &time, &input);
 
         let screen_textures = ScreenTextures::new(&ctx, RenderFormat::HDR_MSAA4);
         let tone_mapping =
             ToneMapping::new(&ctx, RenderFormat::LDR_NO_MSAA.color, &mut shader_cache);
         let bloom = Bloom::new(
             &ctx,
-            &screen_gr,
+            &uniforms,
             RenderFormat::HDR_MSAA4.color,
             &mut shader_cache,
         );
         let egui = Egui::new(&ctx, &window);
-        let color_renderer =
-            ColorMeshRenderer::new(&ctx, &camera_gr, Default::default(), &mut shader_cache);
-        let gizmos = Gizmos::new(&ctx, &camera_gr, RenderFormat::HDR_MSAA4, &mut shader_cache);
+        let color_renderer = ColorMeshRenderer::new(&ctx, Default::default(), &mut shader_cache);
+        let gizmos = Gizmos::new(&ctx, RenderFormat::HDR_MSAA4, &mut shader_cache);
 
-        let time = Time::new();
-        let input = Input::new();
-
-        let ui_renderer = UiScreenRenderer::new(&ctx, &screen_gr, &mut shader_cache);
+        let ui_renderer = UiScreenRenderer::new(&ctx, &mut shader_cache);
         let ui = Board::new(&mut (), REFERENCE_SCREEN_SIZE_D);
         let ui_gr = ElementBatchesGR::new(&ui.batches, &ctx.device);
 
@@ -107,9 +107,8 @@ impl DefaultWorld {
             egui,
             screen_textures,
             camera,
-            camera_gr,
             screen,
-            screen_gr,
+            uniforms,
             bloom,
             tone_mapping,
             color_renderer,
@@ -149,10 +148,16 @@ impl DefaultWorld {
     pub fn prepare(&mut self, encoder: &mut wgpu::CommandEncoder) {
         self.color_renderer.prepare();
         self.gizmos.prepare();
-        self.camera_gr.prepare(&self.ctx.queue, &self.camera);
+
         self.egui.prepare(&self.ctx, encoder);
         self.ui_gr.prepare(&self.ui.batches, &self.ctx);
-        self.screen_gr.prepare(&self.ctx.queue, &self.screen);
+        self.uniforms.prepare(
+            &self.ctx.queue,
+            &self.camera,
+            &self.screen,
+            &self.time,
+            &self.input,
+        );
     }
 
     pub fn render(&mut self) {
@@ -168,15 +173,15 @@ impl DefaultWorld {
         let mut pass = self
             .screen_textures
             .new_hdr_target_render_pass(&mut encoder, clear_color);
-        self.color_renderer.render(&mut pass, &self.camera_gr);
-        self.gizmos.render(&mut pass, &self.camera_gr);
+        self.color_renderer.render(&mut pass, &self.uniforms);
+        self.gizmos.render(&mut pass, &self.uniforms);
         drop(pass);
 
         self.bloom.apply(
             &mut encoder,
             &self.screen_textures.hdr_resolve_target.bind_group(),
             &self.screen_textures.hdr_resolve_target.view(),
-            &self.screen_gr,
+            &self.uniforms,
         );
         self.tone_mapping.apply(
             &mut encoder,
@@ -188,7 +193,7 @@ impl DefaultWorld {
             &view,
             &self.ui_gr,
             &self.ui.batches.batches,
-            &self.screen_gr,
+            &self.uniforms,
         );
         self.egui.render(&mut encoder, &view);
 

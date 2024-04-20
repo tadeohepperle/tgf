@@ -7,12 +7,12 @@ use wgpu::{
 };
 
 use crate::{
-    make_shader_source, Camera3dGR, Color, GraphicsContext, GrowableBuffer, HotReload,
-    ImmediateMeshQueue, ImmediateMeshRanges, RenderFormat, ShaderCache, ShaderSource, ToRaw,
-    Transform, TransformRaw, VertexT, VertsLayout,
+    make_shader_source, uniforms::Uniforms, Camera3dGR, Color, GraphicsContext, GrowableBuffer,
+    HotReload, ImmediateMeshQueue, ImmediateMeshRanges, RenderFormat, ShaderCache, ShaderSource,
+    ToRaw, Transform, TransformRaw, VertexT, VertsLayout,
 };
 
-const SHADER_SOURCE: ShaderSource = make_shader_source!("color_mesh.wgsl");
+const SHADER_SOURCE: ShaderSource = make_shader_source!("uniforms.wgsl", "color_mesh.wgsl");
 
 #[derive(Debug)]
 pub struct ColorMeshRenderer {
@@ -23,7 +23,6 @@ pub struct ColorMeshRenderer {
     render_data: RenderData,
     ctx: GraphicsContext,
     config: ColorMeshRendererConfig,
-    camera_layout: Arc<wgpu::BindGroupLayout>,
 }
 
 #[derive(Debug, Clone)]
@@ -48,21 +47,17 @@ impl ColorMeshRenderer {
     /// Use Replace or Alpha Blending for the blend mode.
     pub fn new(
         ctx: &GraphicsContext,
-        camera: &Camera3dGR,
         config: ColorMeshRendererConfig,
         cache: &mut ShaderCache,
     ) -> Self {
-        let shader_source = make_shader_source!("color_mesh.wgsl");
         let shader = cache.register(SHADER_SOURCE);
-        let pipeline =
-            create_render_pipeline(&shader, &ctx.device, camera.bind_group_layout(), &config);
+        let pipeline = create_render_pipeline(&shader, &ctx.device, &config);
 
         ColorMeshRenderer {
             pipeline,
             color_mesh_queue: ImmediateMeshQueue::default(),
             render_data: RenderData::new(&ctx.device),
             ctx: ctx.clone(),
-            camera_layout: camera.bind_group_layout().clone(),
             config,
         }
     }
@@ -130,10 +125,10 @@ impl ColorMeshRenderer {
     pub fn render<'encoder>(
         &'encoder self,
         render_pass: &mut wgpu::RenderPass<'encoder>,
-        camera: &'encoder Camera3dGR,
+        uniforms: &'encoder Uniforms,
     ) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, camera.bind_group(), &[]);
+        render_pass.set_bind_group(0, uniforms.bind_group(), &[]);
         render_pass.set_vertex_buffer(0, self.render_data.vertex_buffer.buffer().slice(..));
         render_pass.set_index_buffer(
             self.render_data.index_buffer.buffer().slice(..),
@@ -152,8 +147,7 @@ impl HotReload for ColorMeshRenderer {
     }
 
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.pipeline =
-            create_render_pipeline(shader, &self.ctx.device, &self.camera_layout, &self.config)
+        self.pipeline = create_render_pipeline(shader, &self.ctx.device, &self.config)
     }
 }
 
@@ -226,7 +220,6 @@ impl ToRaw for (Transform, Color) {
 fn create_render_pipeline(
     shader: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera_layout: &BindGroupLayout,
     config: &ColorMeshRendererConfig,
 ) -> wgpu::RenderPipeline {
     let label = "ColorMeshRenderer";
@@ -235,7 +228,7 @@ fn create_render_pipeline(
 
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(&format!("{label} PipelineLayout")),
-        bind_group_layouts: &[camera_layout],
+        bind_group_layouts: &[Uniforms::cached_layout()],
         push_constant_ranges: &[],
     });
 
