@@ -67,6 +67,7 @@ pub use texture::{
 };
 pub use time::{Time, TimeGR, TimeRaw, TimeStats};
 pub use transform::{Transform, TransformRaw};
+pub use uniforms::Uniforms;
 pub use vertex::{VertexT, VertsLayout};
 pub use watcher::FileChangeWatcher;
 pub use winit::{dpi::PhysicalSize, event::WindowEvent, keyboard::KeyCode, window::Window};

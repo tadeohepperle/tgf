@@ -50,7 +50,6 @@ pub struct Bloom {
     settings: BloomSettings,
     ctx: GraphicsContext,
     color_format: wgpu::TextureFormat,
-    screen_layout: Arc<wgpu::BindGroupLayout>,
 }
 
 const SHADER_SOURCE: ShaderSource =
@@ -59,7 +58,6 @@ const SHADER_SOURCE: ShaderSource =
 impl Bloom {
     pub fn new(
         ctx: &GraphicsContext,
-        screen: &Uniforms,
         color_format: wgpu::TextureFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
@@ -69,12 +67,7 @@ impl Bloom {
         let bloom_textures = BloomTextures::create(&ctx.device, width, height, color_format);
 
         let shader = shader_cache.register(SHADER_SOURCE);
-        let bloom_pipelines = BloomPipelines::new(
-            &shader,
-            &ctx.device,
-            screen.bind_group_layout(),
-            color_format,
-        );
+        let bloom_pipelines = BloomPipelines::new(&shader, &ctx.device, color_format);
 
         Bloom {
             bloom_textures,
@@ -82,7 +75,6 @@ impl Bloom {
             settings: Default::default(),
             ctx: ctx.clone(),
             color_format,
-            screen_layout: screen.bind_group_layout().clone(),
         }
     }
 
@@ -341,12 +333,14 @@ impl BloomPipelines {
     pub fn new(
         shader: &wgpu::ShaderModule,
         device: &wgpu::Device,
-        screen_layout: &wgpu::BindGroupLayout,
         color_format: wgpu::TextureFormat,
     ) -> Self {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[screen_layout, rgba_bind_group_layout_cached(device)],
+            bind_group_layouts: &[
+                Uniforms::cached_layout(),
+                rgba_bind_group_layout_cached(device),
+            ],
             push_constant_ranges: &[],
         });
 
@@ -468,11 +462,6 @@ impl HotReload for Bloom {
     }
 
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.bloom_pipelines = BloomPipelines::new(
-            shader,
-            &self.ctx.device,
-            &self.screen_layout,
-            self.color_format,
-        );
+        self.bloom_pipelines = BloomPipelines::new(shader, &self.ctx.device, self.color_format);
     }
 }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     make_shader_source, rgba_bind_group_layout_cached, Camera3dGR, Color, HotReload, RenderFormat,
-    ShaderCache, ShaderSource, ToRaw, Transform, TransformRaw, VertexT, VertsLayout,
+    ShaderCache, ShaderSource, ToRaw, Transform, TransformRaw, Uniforms, VertexT, VertsLayout,
 };
 use crate::{
     ui::{
@@ -32,7 +32,6 @@ pub struct Ui3DRenderer {
     glyph_pipeline: wgpu::RenderPipeline,
     render_format: RenderFormat,
     ctx: GraphicsContext,
-    camera_layout: Arc<wgpu::BindGroupLayout>,
 }
 
 const SHADER_SOURCE: ShaderSource =
@@ -46,22 +45,20 @@ impl Ui3DRenderer {
     /// - ui_3d_wgsl_path: String,
     pub fn new(
         ctx: &GraphicsContext,
-        camera: &Camera3dGR,
+
         render_format: RenderFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
         let device = &ctx.device;
-        let camera_layout = camera.bind_group_layout().clone();
 
         let shader = shader_cache.register(SHADER_SOURCE);
 
-        let glyph_pipeline = create_glyph_pipeline(&shader, device, &camera_layout, render_format);
-        let rect_pipeline = create_rect_pipeline(&shader, device, &camera_layout, render_format);
-        let textured_rect_pipeline =
-            create_textured_rect_pipeline(&shader, device, &camera_layout, render_format);
+        let glyph_pipeline = create_glyph_pipeline(&shader, device, render_format);
+        let rect_pipeline = create_rect_pipeline(&shader, device, render_format);
+        let textured_rect_pipeline = create_textured_rect_pipeline(&shader, device, render_format);
 
         let alpha_sdf_rect_pipeline =
-            create_alpha_sdf_rect_pipeline(&shader, device, &camera_layout, render_format);
+            create_alpha_sdf_rect_pipeline(&shader, device, render_format);
 
         Ui3DRenderer {
             rect_pipeline,
@@ -69,7 +66,6 @@ impl Ui3DRenderer {
             glyph_pipeline,
             render_format,
             alpha_sdf_rect_pipeline,
-            camera_layout,
             ctx: ctx.clone(),
         }
     }
@@ -122,7 +118,7 @@ impl Ui3DRenderer {
         &'a self,
         pass: &mut wgpu::RenderPass<'a>,
         board: &'a Board3d,
-        camera: &'a Camera3dGR,
+        uniforms: &'a Uniforms,
     ) {
         self.render_batches(
             pass,
@@ -130,7 +126,7 @@ impl Ui3DRenderer {
             &board.board.batches.batches,
             &board.transform,
             board.color,
-            camera,
+            uniforms,
         )
     }
 
@@ -141,9 +137,9 @@ impl Ui3DRenderer {
         batches: &'a Vec<Batch>,
         transform: &Transform,
         color: Color,
-        camera: &'a Camera3dGR,
+        uniforms: &'a Uniforms,
     ) {
-        pass.set_bind_group(0, camera.bind_group(), &[]);
+        pass.set_bind_group(0, uniforms.bind_group(), &[]);
 
         const VERTEX_COUNT: u32 = 4;
         let push_constants = PushConstants {
@@ -210,15 +206,13 @@ impl HotReload for Ui3DRenderer {
 
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
         let render_format = self.render_format;
-        let camera = &self.camera_layout;
         let device = &self.ctx.device;
 
-        self.glyph_pipeline = create_glyph_pipeline(&shader, device, camera, render_format);
-        self.rect_pipeline = create_rect_pipeline(&shader, device, camera, render_format);
-        self.textured_rect_pipeline =
-            create_textured_rect_pipeline(&shader, device, camera, render_format);
+        self.glyph_pipeline = create_glyph_pipeline(&shader, device, render_format);
+        self.rect_pipeline = create_rect_pipeline(&shader, device, render_format);
+        self.textured_rect_pipeline = create_textured_rect_pipeline(&shader, device, render_format);
         self.alpha_sdf_rect_pipeline =
-            create_alpha_sdf_rect_pipeline(&shader, device, camera, render_format);
+            create_alpha_sdf_rect_pipeline(&shader, device, render_format);
         println!("Hot reloaded Ui 3d Shader");
     }
 }
@@ -226,7 +220,7 @@ impl HotReload for Ui3DRenderer {
 fn create_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera_layout: &wgpu::BindGroupLayout,
+
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<RectRaw>(
@@ -234,7 +228,7 @@ fn create_rect_pipeline(
         "rect_vs_3d",
         "rect_fs",
         device,
-        &[camera_layout],
+        &[Uniforms::cached_layout()],
         render_format,
     )
 }
@@ -242,7 +236,7 @@ fn create_rect_pipeline(
 fn create_textured_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera_layout: &wgpu::BindGroupLayout,
+
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<TexturedRectRaw>(
@@ -250,7 +244,10 @@ fn create_textured_rect_pipeline(
         "textured_rect_vs_3d",
         "textured_rect_fs",
         device,
-        &[camera_layout, rgba_bind_group_layout_cached(device)],
+        &[
+            Uniforms::cached_layout(),
+            rgba_bind_group_layout_cached(device),
+        ],
         render_format,
     )
 }
@@ -258,7 +255,7 @@ fn create_textured_rect_pipeline(
 fn create_alpha_sdf_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera_layout: &wgpu::BindGroupLayout,
+
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<AlphaSdfRectRaw>(
@@ -266,7 +263,10 @@ fn create_alpha_sdf_rect_pipeline(
         "alpha_sdf_rect_vs_3d",
         "alpha_sdf_fs",
         device,
-        &[camera_layout, rgba_bind_group_layout_cached(device)],
+        &[
+            Uniforms::cached_layout(),
+            rgba_bind_group_layout_cached(device),
+        ],
         render_format,
     )
 }
@@ -274,7 +274,7 @@ fn create_alpha_sdf_rect_pipeline(
 fn create_glyph_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
-    camera_layout: &wgpu::BindGroupLayout,
+
     render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<GlyphRaw>(
@@ -282,7 +282,10 @@ fn create_glyph_pipeline(
         "glyph_vs_3d",
         "glyph_fs",
         device,
-        &[camera_layout, rgba_bind_group_layout_cached(device)],
+        &[
+            Uniforms::cached_layout(),
+            rgba_bind_group_layout_cached(device),
+        ],
         render_format,
     )
 }

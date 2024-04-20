@@ -83,12 +83,7 @@ impl DefaultWorld {
         let screen_textures = ScreenTextures::new(&ctx, RenderFormat::HDR_MSAA4);
         let tone_mapping =
             ToneMapping::new(&ctx, RenderFormat::LDR_NO_MSAA.color, &mut shader_cache);
-        let bloom = Bloom::new(
-            &ctx,
-            &uniforms,
-            RenderFormat::HDR_MSAA4.color,
-            &mut shader_cache,
-        );
+        let bloom = Bloom::new(&ctx, RenderFormat::HDR_MSAA4.color, &mut shader_cache);
         let egui = Egui::new(&ctx, &window);
         let color_renderer = ColorMeshRenderer::new(&ctx, Default::default(), &mut shader_cache);
         let gizmos = Gizmos::new(&ctx, RenderFormat::HDR_MSAA4, &mut shader_cache);
