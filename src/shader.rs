@@ -28,12 +28,11 @@ macro_rules! make_shader_source {
 
 pub trait HotReload {
     fn source(&self) -> ShaderSource;
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule);
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device);
 }
 
 #[derive(Debug)]
 pub struct ShaderCache {
-    ctx: GraphicsContext,
     /// maps each file to the current wgsl content.
     current_wgsl: HashMap<ShaderFile, String>,
     module_cache: HashMap<String, std::sync::Weak<wgpu::ShaderModule>>,
@@ -42,9 +41,8 @@ pub struct ShaderCache {
 }
 
 impl ShaderCache {
-    pub fn new(ctx: &GraphicsContext, hot_reload_shaders_dir: Option<&'static str>) -> Self {
+    pub fn new(hot_reload_shaders_dir: Option<&'static str>) -> Self {
         ShaderCache {
-            ctx: ctx.clone(),
             current_wgsl: HashMap::new(),
             module_cache: HashMap::new(),
             hot_reload_watcher: if let Some(dir) = hot_reload_shaders_dir {
@@ -57,7 +55,11 @@ impl ShaderCache {
         }
     }
 
-    pub fn register(&mut self, source: ShaderSource) -> Arc<wgpu::ShaderModule> {
+    pub fn register(
+        &mut self,
+        source: ShaderSource,
+        device: &wgpu::Device,
+    ) -> Arc<wgpu::ShaderModule> {
         for file in source.files {
             self.add_file(*file);
         }
@@ -70,11 +72,11 @@ impl ShaderCache {
         if let Err(err) = validate_wgsl(&wgsl) {
             panic!("Error: {err}");
         }
-        self.get_shader_module(wgsl)
+        self.get_shader_module(wgsl, device)
     }
 
     /// checks for changes in the watched paths and if so, updates all the hotreloadable renderers.
-    pub fn hot_reload(&mut self, reload: &mut [&mut dyn HotReload]) {
+    pub fn hot_reload(&mut self, reload: &mut [&mut dyn HotReload], device: &wgpu::Device) {
         let Some(watcher) = &mut self.hot_reload_watcher else {
             return;
         };
@@ -111,8 +113,8 @@ impl ShaderCache {
             if let Err(err) = validate_wgsl(&wgsl) {
                 println!("Hot-Reload-Error: {err}");
             } else {
-                let shader = self.get_shader_module(wgsl);
-                r.hot_reload(&shader);
+                let shader = self.get_shader_module(wgsl, device);
+                r.hot_reload(&shader, device);
             }
         }
     }
@@ -137,20 +139,21 @@ impl ShaderCache {
         self.current_wgsl.insert(file, wgsl);
     }
 
-    fn get_shader_module(&mut self, wgsl: String) -> Arc<wgpu::ShaderModule> {
+    fn get_shader_module(
+        &mut self,
+        wgsl: String,
+        device: &wgpu::Device,
+    ) -> Arc<wgpu::ShaderModule> {
         if let Some(shader) = self.module_cache.get(&wgsl) {
             if let Some(shader) = shader.upgrade() {
                 return shader;
             }
         }
 
-        let shader = self
-            .ctx
-            .device
-            .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: None,
-                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&wgsl)),
-            });
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(&wgsl)),
+        });
         let shader = Arc::new(shader);
         self.module_cache.insert(wgsl, Arc::downgrade(&shader));
 

@@ -1,8 +1,10 @@
 use std::{borrow::Cow, sync::Arc};
 
 use crate::{
-    graphics_context::GraphicsContext, make_shader_source, rgba_bind_group_layout_cached,
-    uniforms::Uniforms, HdrTexture, HotReload, ScreenGR, ShaderCache, ShaderSource,
+    graphics_context::{GraphicsContext, GraphicsContextInner},
+    make_shader_source, rgba_bind_group_layout_cached,
+    uniforms::Uniforms,
+    HdrTexture, HotReload, ScreenGR, ShaderCache, ShaderSource,
 };
 use wgpu::{BindGroupLayout, BlendComponent, BlendFactor, BlendOperation, BlendState};
 use winit::dpi::PhysicalSize;
@@ -48,7 +50,6 @@ pub struct Bloom {
     bloom_textures: BloomTextures,
     bloom_pipelines: BloomPipelines,
     settings: BloomSettings,
-    ctx: GraphicsContext,
     color_format: wgpu::TextureFormat,
 }
 
@@ -57,23 +58,21 @@ const SHADER_SOURCE: ShaderSource =
 
 impl Bloom {
     pub fn new(
-        ctx: &GraphicsContext,
+        device: &wgpu::Device,
+        width: u32,
+        height: u32,
         color_format: wgpu::TextureFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
-        let size = ctx.size();
-        let width = size.width;
-        let height = size.height;
-        let bloom_textures = BloomTextures::create(&ctx.device, width, height, color_format);
+        let bloom_textures = BloomTextures::create(device, width, height, color_format);
 
-        let shader = shader_cache.register(SHADER_SOURCE);
-        let bloom_pipelines = BloomPipelines::new(&shader, &ctx.device, color_format);
+        let shader = shader_cache.register(SHADER_SOURCE, device);
+        let bloom_pipelines = BloomPipelines::new(&shader, device, color_format);
 
         Bloom {
             bloom_textures,
             bloom_pipelines,
             settings: Default::default(),
-            ctx: ctx.clone(),
             color_format,
         }
     }
@@ -83,12 +82,11 @@ impl Bloom {
     }
 
     /// make sure this is called after graphics context is reconfigured (to match the ctx configs size)
-    pub fn resize(&mut self, size: PhysicalSize<u32>) {
+    pub fn resize(&mut self, size: PhysicalSize<u32>, device: &wgpu::Device) {
         // recreate the textures on the gpu with the appropriate sizes
         let width = size.width;
         let height = size.height;
-        self.bloom_textures =
-            BloomTextures::create(&self.ctx.device, width, height, self.color_format);
+        self.bloom_textures = BloomTextures::create(device, width, height, self.color_format);
     }
 
     pub fn apply<'e>(
@@ -461,7 +459,7 @@ impl HotReload for Bloom {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.bloom_pipelines = BloomPipelines::new(shader, &self.ctx.device, self.color_format);
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
+        self.bloom_pipelines = BloomPipelines::new(shader, device, self.color_format);
     }
 }

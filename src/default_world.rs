@@ -68,22 +68,34 @@ impl DefaultWorld {
     pub fn new(window: Arc<Window>) -> Self {
         let rt = tokio::runtime::Builder::new_multi_thread().build().unwrap();
         let ctx = GraphicsContext::new(Default::default(), &rt, &window).unwrap();
-        let mut shader_cache = ShaderCache::new(&ctx, Some("./hotreload"));
+        let mut shader_cache = ShaderCache::new(Some("./hotreload"));
 
         let mut camera = Camera3d::new(window.inner_size().width, window.inner_size().height);
         camera.transform.pos.x = -70.0;
 
-        let screen = Screen::new(&window);
+        let size = window.inner_size();
+        let screen = Screen::new(size, window.scale_factor());
         let time = Time::new();
 
         let input = Input::new();
 
-        let uniforms = Uniforms::new(&ctx, &camera, &screen, &time, &input);
+        let uniforms = Uniforms::new(&ctx.device, &camera, &screen, &time, &input);
 
-        let screen_textures = ScreenTextures::new(&ctx, RenderFormat::HDR_MSAA4);
+        let screen_textures = ScreenTextures::new(
+            &ctx.device,
+            size.width,
+            size.height,
+            RenderFormat::HDR_MSAA4,
+        );
         let tone_mapping =
             ToneMapping::new(&ctx, RenderFormat::LDR_NO_MSAA.color, &mut shader_cache);
-        let bloom = Bloom::new(&ctx, RenderFormat::HDR_MSAA4.color, &mut shader_cache);
+        let bloom = Bloom::new(
+            &ctx.device,
+            size.width,
+            size.height,
+            RenderFormat::HDR_MSAA4.color,
+            &mut shader_cache,
+        );
         let egui = Egui::new(&ctx, &window);
         let color_renderer = ColorMeshRenderer::new(&ctx, Default::default(), &mut shader_cache);
         let gizmos = Gizmos::new(&ctx, RenderFormat::HDR_MSAA4, &mut shader_cache);
@@ -117,13 +129,16 @@ impl DefaultWorld {
     pub fn start_frame(&mut self) {
         self.time.start_frame();
         self.egui.begin_frame();
-        self.shader_cache.hot_reload(&mut [
-            &mut self.color_renderer,
-            &mut self.gizmos,
-            &mut self.bloom,
-            &mut self.tone_mapping,
-            &mut self.ui_renderer,
-        ]);
+        self.shader_cache.hot_reload(
+            &mut [
+                &mut self.color_renderer,
+                &mut self.gizmos,
+                &mut self.bloom,
+                &mut self.tone_mapping,
+                &mut self.ui_renderer,
+            ],
+            &self.ctx.device,
+        );
         self.ui.ctx.set_input(&self.input);
     }
 
@@ -135,8 +150,8 @@ impl DefaultWorld {
         self.ctx.resize(size);
         self.camera.resize(size);
         self.screen.resize(size);
-        self.bloom.resize(size);
-        self.screen_textures.resize(&self.ctx, size);
+        self.bloom.resize(size, &self.ctx.device);
+        self.screen_textures.resize(&self.ctx.device, size);
         self.ui.resize_scaled_to_fixed_height(size);
     }
 

@@ -24,7 +24,7 @@ impl Uniforms {
     }
 
     pub fn new(
-        ctx: &GraphicsContext,
+        device: &wgpu::Device,
         camera: &Camera3d,
         screen: &Screen,
         time: &Time,
@@ -48,17 +48,17 @@ impl Uniforms {
                     entries: &[entry(0), entry(1), entry(2), entry(3)],
                 };
                 let bind_group_layout =
-                    Arc::new(ctx.device.create_bind_group_layout(&layout_descriptor));
+                    Arc::new(device.create_bind_group_layout(&layout_descriptor));
                 bind_group_layout
             })
             .clone();
 
-        let camera = UniformBuffer::new(camera.to_raw(), &ctx.device);
-        let screen = UniformBuffer::new(screen.to_raw(), &ctx.device);
-        let time = UniformBuffer::new(time.to_raw(), &ctx.device);
-        let input = UniformBuffer::new(input.to_raw(), &ctx.device);
+        let camera = UniformBuffer::new(camera.to_raw(), device);
+        let screen = UniformBuffer::new(screen.to_raw(), device);
+        let time = UniformBuffer::new(time.to_raw(), device);
+        let input = UniformBuffer::new(input.to_raw(), device);
 
-        let bind_group = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Globals BindGroup"),
             layout: &bind_group_layout,
             entries: &[

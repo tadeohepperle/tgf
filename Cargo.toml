@@ -6,8 +6,10 @@ license = "MIT"
 description = "Tadeo's Game Framework"
 
 [features]
-default = ["eguimod"]
+default = ["eguimod", "renderers", "ui"]
 eguimod = ["egui", "egui-wgpu"]
+renderers = []
+ui = []
 
 [dependencies]
 ahash = "0.8.11"

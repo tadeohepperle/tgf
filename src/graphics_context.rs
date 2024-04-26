@@ -61,18 +61,20 @@ impl GraphicsContext {
         window: &Window,
     ) -> anyhow::Result<Self> {
         let graphics_context =
-            rt.block_on(async move { initialize_graphics_context(config, window).await })?;
+            rt.block_on(async move { new_graphics_context(config, window).await })?;
         Ok(graphics_context)
     }
 
-    pub fn size(&self) -> PhysicalSize<u32> {
-        let config = self.surface_config.lock().unwrap();
-        PhysicalSize::new(config.width, config.height)
-    }
-
     pub async fn new_async(config: GraphicsContextConfig, window: &Window) -> anyhow::Result<Self> {
-        initialize_graphics_context(config, window).await
+        new_graphics_context(config, window).await
     }
+}
+
+impl GraphicsContextInner {
+    // pub fn size(&self) -> PhysicalSize<u32> {
+    //     let config = self.surface_config.lock().unwrap();
+    //     PhysicalSize::new(config.width, config.height)
+    // }
 
     pub fn new_encoder(&self) -> wgpu::CommandEncoder {
         self.device
@@ -90,7 +92,7 @@ impl GraphicsContext {
         (output, view)
     }
 
-    pub fn resize(&mut self, size: PhysicalSize<u32>) {
+    pub fn resize(&self, size: PhysicalSize<u32>) {
         let mut config = self.surface_config.lock().unwrap();
         config.width = size.width;
         config.height = size.height;
@@ -104,15 +106,22 @@ impl GraphicsContext {
     }
 }
 
-pub async fn initialize_graphics_context(
+pub async fn new_graphics_context(
     config: GraphicsContextConfig,
     window: &Window,
 ) -> anyhow::Result<GraphicsContext> {
+    let ctx = new_graphics_context_inner(config, window).await?;
+    Ok(GraphicsContext(Arc::new(ctx)))
+}
+
+pub async fn new_graphics_context_inner(
+    config: GraphicsContextConfig,
+    window: &Window,
+) -> anyhow::Result<GraphicsContextInner> {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
         ..Default::default()
     });
-
     let surface = unsafe {
         instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(&window)?)?
     };
@@ -173,5 +182,5 @@ pub async fn initialize_graphics_context(
         surface_config,
         surface_format,
     };
-    Ok(GraphicsContext(Arc::new(ctx)))
+    Ok(ctx)
 }

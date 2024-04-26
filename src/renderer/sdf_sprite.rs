@@ -55,7 +55,7 @@ impl SdfSpriteRenderer {
     ) -> Self {
         let ctx = ctx.clone();
         let instance_buffer = GrowableBuffer::new(&ctx.device, 32, BufferUsages::VERTEX);
-        let shader = cache.register(SHADER_SOURCE);
+        let shader = cache.register(SHADER_SOURCE, &ctx.device);
 
         let camera_layout = camera.bind_group_layout().clone();
         let pipeline = create_pipeline(&shader, &ctx.device, &camera_layout, render_format);
@@ -97,13 +97,8 @@ impl HotReload for SdfSpriteRenderer {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.pipeline = create_pipeline(
-            shader,
-            &self.ctx.device,
-            &self.camera_layout,
-            self.render_format,
-        )
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
+        self.pipeline = create_pipeline(shader, device, &self.camera_layout, self.render_format)
     }
 }
 

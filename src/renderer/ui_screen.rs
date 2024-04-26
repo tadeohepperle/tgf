@@ -25,7 +25,7 @@ pub struct UiScreenRenderer {
 impl UiScreenRenderer {
     /// The shader source should include `ui.wgsl` and `alpha_sdf.wgsl`.
     pub fn new(ctx: &GraphicsContext, shader_cache: &mut ShaderCache) -> Self {
-        let shader = shader_cache.register(SHADER_SOURCE);
+        let shader = shader_cache.register(SHADER_SOURCE, &ctx.device);
 
         let device = &ctx.device;
         let glyph_pipeline = create_glyph_pipeline(&shader, device);
@@ -129,8 +129,7 @@ impl HotReload for UiScreenRenderer {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        let device = &self.ctx.device;
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
         self.glyph_pipeline = create_glyph_pipeline(&shader, device);
         self.rect_pipeline = create_rect_pipeline(&shader, device);
         self.textured_rect_pipeline = create_textured_rect_pipeline(&shader, device);

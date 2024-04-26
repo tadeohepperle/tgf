@@ -27,90 +27,43 @@ use super::RenderFormat;
 
 const SHADER_SOURCE: ShaderSource = make_shader_source!("uniforms.wgsl", "gizmos.wgsl");
 
-pub struct Gizmos {
-    /// immediate vertices, written to vertex_buffer every frame.
-    vertex_queue: Vec<Vertex>,
-    pipeline: wgpu::RenderPipeline,
-    vertex_buffer: GrowableBuffer<Vertex>,
-    ctx: GraphicsContext,
-    render_format: RenderFormat,
-}
+pub struct GizmosVertexQueue(pub Vec<Vertex>);
 
-impl Gizmos {
-    pub fn new(
-        ctx: &GraphicsContext,
-        render_format: RenderFormat,
-        shader_cache: &mut ShaderCache,
-    ) -> Self {
-        let vertex_buffer = GrowableBuffer::new(&ctx.device, 256, BufferUsages::VERTEX);
-
-        let shader = shader_cache.register(SHADER_SOURCE);
-        let pipeline = create_pipeline(&shader, &ctx.device, render_format);
-        Gizmos {
-            pipeline,
-            vertex_queue: vec![],
-            vertex_buffer,
-            ctx: ctx.clone(),
-            render_format,
-        }
-    }
-
-    pub fn render<'encoder>(
-        &'encoder self,
-        render_pass: &mut wgpu::RenderPass<'encoder>,
-        uniforms: &'encoder Uniforms,
-    ) {
-        if self.vertex_buffer.len() == 0 {
-            return;
-        }
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, uniforms.bind_group(), &[]);
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.buffer().slice(..));
-        render_pass.draw(0..self.vertex_buffer.len() as u32, 0..1);
-    }
-
-    pub fn prepare(&mut self) {
-        self.vertex_buffer
-            .prepare(&self.vertex_queue, &self.ctx.device, &self.ctx.queue);
-        self.vertex_queue.clear();
+impl GizmosVertexQueue {
+    pub fn new() -> Self {
+        Self(vec![])
     }
 
     pub fn draw_line(&mut self, from: Vec3, to: Vec3, color: Color) {
-        self.vertex_queue.push(Vertex {
-            pos: [from.x, from.y, from.z],
-            color,
-        });
-        self.vertex_queue.push(Vertex {
-            pos: [to.x, to.y, to.z],
-            color,
-        });
+        self.0.push(Vertex { pos: from, color });
+        self.0.push(Vertex { pos: to, color });
     }
 
     pub fn draw_xyz(&mut self) {
-        self.vertex_queue.push(Vertex {
-            pos: [0.0, 0.0, 0.0],
+        self.0.push(Vertex {
+            pos: Vec3::ZERO,
             color: Color::RED,
         });
-        self.vertex_queue.push(Vertex {
-            pos: [1.0, 0.0, 0.0],
+        self.0.push(Vertex {
+            pos: Vec3::X,
             color: Color::RED,
         });
 
-        self.vertex_queue.push(Vertex {
-            pos: [0.0, 0.0, 0.0],
+        self.0.push(Vertex {
+            pos: Vec3::ZERO,
             color: Color::GREEN,
         });
-        self.vertex_queue.push(Vertex {
-            pos: [0.0, 1.0, 0.0],
+        self.0.push(Vertex {
+            pos: Vec3::Y,
             color: Color::GREEN,
         });
 
-        self.vertex_queue.push(Vertex {
-            pos: [0.0, 0.0, 0.0],
+        self.0.push(Vertex {
+            pos: Vec3::ZERO,
             color: Color::BLUE,
         });
-        self.vertex_queue.push(Vertex {
-            pos: [0.0, 0.0, 1.0],
+        self.0.push(Vertex {
+            pos: Vec3::Z,
             color: Color::BLUE,
         });
     }
@@ -142,14 +95,8 @@ impl Gizmos {
         ];
 
         for (from, to) in lines {
-            self.vertex_queue.push(Vertex {
-                pos: [from.x, from.y, from.z],
-                color,
-            });
-            self.vertex_queue.push(Vertex {
-                pos: [to.x, to.y, to.z],
-                color,
-            });
+            self.0.push(Vertex { pos: from, color });
+            self.0.push(Vertex { pos: to, color });
         }
     }
 
@@ -166,13 +113,82 @@ impl Gizmos {
     }
 }
 
+pub struct Gizmos {
+    /// immediate vertices, written to vertex_buffer every frame.
+    vertex_queue: GizmosVertexQueue,
+    pipeline: wgpu::RenderPipeline,
+    vertex_buffer: GrowableBuffer<Vertex>,
+    ctx: GraphicsContext,
+    render_format: RenderFormat,
+}
+
+impl Gizmos {
+    pub fn new(
+        ctx: &GraphicsContext,
+        render_format: RenderFormat,
+        shader_cache: &mut ShaderCache,
+    ) -> Self {
+        let vertex_buffer = GrowableBuffer::new(&ctx.device, 256, BufferUsages::VERTEX);
+
+        let shader = shader_cache.register(SHADER_SOURCE, &ctx.device);
+        let pipeline = create_pipeline(&shader, &ctx.device, render_format);
+        Gizmos {
+            pipeline,
+            vertex_queue: GizmosVertexQueue::new(),
+            vertex_buffer,
+            ctx: ctx.clone(),
+            render_format,
+        }
+    }
+
+    pub fn render<'encoder>(
+        &'encoder self,
+        render_pass: &mut wgpu::RenderPass<'encoder>,
+        uniforms: &'encoder Uniforms,
+    ) {
+        if self.vertex_buffer.len() == 0 {
+            return;
+        }
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, uniforms.bind_group(), &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.buffer().slice(..));
+        render_pass.draw(0..self.vertex_buffer.len() as u32, 0..1);
+    }
+
+    pub fn prepare(&mut self) {
+        self.vertex_buffer
+            .prepare(&self.vertex_queue.0, &self.ctx.device, &self.ctx.queue);
+        self.vertex_queue.0.clear();
+    }
+
+    #[inline]
+    pub fn draw_line(&mut self, from: Vec3, to: Vec3, color: Color) {
+        self.vertex_queue.draw_line(from, to, color)
+    }
+
+    #[inline]
+    pub fn draw_xyz(&mut self) {
+        self.vertex_queue.draw_xyz();
+    }
+
+    #[inline]
+    pub fn draw_cube(&mut self, position: Vec3, side_len: f32, color: Color) {
+        self.vertex_queue.draw_cube(position, side_len, color)
+    }
+
+    #[inline]
+    pub fn draw_aabb(&mut self, aabb: Aabb, color: Color) {
+        self.vertex_queue.draw_aabb(aabb, color);
+    }
+}
+
 impl HotReload for Gizmos {
     fn source(&self) -> ShaderSource {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.pipeline = create_pipeline(shader, &self.ctx.device, self.render_format);
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
+        self.pipeline = create_pipeline(shader, device, self.render_format);
     }
 }
 
@@ -182,9 +198,9 @@ impl HotReload for Gizmos {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    pos: [f32; 3],
-    color: Color,
+pub struct Vertex {
+    pub pos: Vec3,
+    pub color: Color,
 }
 
 impl VertexT for Vertex {
@@ -192,7 +208,7 @@ impl VertexT for Vertex {
         &[wgpu::VertexFormat::Float32x3, wgpu::VertexFormat::Float32x4];
 }
 
-fn create_pipeline(
+pub fn create_pipeline(
     shader: &wgpu::ShaderModule,
     device: &wgpu::Device,
     render_format: RenderFormat,

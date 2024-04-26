@@ -51,7 +51,7 @@ impl Ui3DRenderer {
     ) -> Self {
         let device = &ctx.device;
 
-        let shader = shader_cache.register(SHADER_SOURCE);
+        let shader = shader_cache.register(SHADER_SOURCE, &ctx.device);
 
         let glyph_pipeline = create_glyph_pipeline(&shader, device, render_format);
         let rect_pipeline = create_rect_pipeline(&shader, device, render_format);
@@ -204,10 +204,8 @@ impl HotReload for Ui3DRenderer {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
         let render_format = self.render_format;
-        let device = &self.ctx.device;
-
         self.glyph_pipeline = create_glyph_pipeline(&shader, device, render_format);
         self.rect_pipeline = create_rect_pipeline(&shader, device, render_format);
         self.textured_rect_pipeline = create_textured_rect_pipeline(&shader, device, render_format);

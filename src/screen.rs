@@ -12,7 +12,15 @@ pub struct Screen {
 }
 
 impl Screen {
-    pub fn new(window: &winit::window::Window) -> Self {
+    pub fn new(size: PhysicalSize<u32>, scale_factor: f64) -> Self {
+        Self {
+            width: size.width,
+            height: size.height,
+            scale_factor,
+        }
+    }
+
+    pub fn from_window(window: &winit::window::Window) -> Self {
         Self {
             width: window.inner_size().width,
             height: window.inner_size().height,

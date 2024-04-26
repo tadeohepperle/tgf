@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use crate::{
-    rgba_bind_group_layout_cached, rgba_bind_group_layout_msaa4_cached, BindableTexture, Color,
-    GraphicsContext, RenderFormat, Texture,
+    graphics_context::GraphicsContextInner, rgba_bind_group_layout_cached,
+    rgba_bind_group_layout_msaa4_cached, BindableTexture, Color, GraphicsContext, RenderFormat,
+    Texture,
 };
 use log::warn;
 use winit::dpi::PhysicalSize;
@@ -14,12 +15,25 @@ pub struct ScreenTextures {
 }
 
 impl ScreenTextures {
-    pub fn new(ctx: &GraphicsContext, render_format: RenderFormat) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        width: u32,
+        height: u32,
+        render_format: RenderFormat,
+    ) -> Self {
         let depth_texture = render_format.depth.map(|depth_format| {
-            DepthTexture::create(ctx, depth_format, render_format.msaa_sample_count)
+            DepthTexture::create(
+                device,
+                width,
+                height,
+                depth_format,
+                render_format.msaa_sample_count,
+            )
         });
-        let hdr_msaa_texture = HdrTexture::create_screen_sized(ctx, 4, render_format.color);
-        let hdr_resolve_target = HdrTexture::create_screen_sized(ctx, 1, render_format.color);
+        let hdr_msaa_texture =
+            HdrTexture::create(device, width, height, 4, render_format.color, "");
+        let hdr_resolve_target =
+            HdrTexture::create(device, width, height, 1, render_format.color, "");
 
         Self {
             render_format,
@@ -61,17 +75,27 @@ impl ScreenTextures {
         main_render_pass
     }
 
-    pub fn resize(&mut self, ctx: &GraphicsContext, size: PhysicalSize<u32>) {
+    pub fn resize(&mut self, device: &wgpu::Device, size: PhysicalSize<u32>) {
         if let Some(depth_texture) = &mut self.depth_texture {
-            depth_texture.recreate(ctx);
+            depth_texture.recreate(device, size.width, size.height);
         }
 
-        self.hdr_msaa_texture = HdrTexture::create_screen_sized(
-            ctx,
+        self.hdr_msaa_texture = HdrTexture::create(
+            device,
+            size.width,
+            size.height,
             self.render_format.msaa_sample_count,
             self.render_format.color,
+            "",
         );
-        self.hdr_resolve_target = HdrTexture::create_screen_sized(ctx, 1, self.render_format.color);
+        self.hdr_resolve_target = HdrTexture::create(
+            device,
+            size.width,
+            size.height,
+            1,
+            self.render_format.color,
+            "",
+        );
     }
 }
 
@@ -87,15 +111,16 @@ impl DepthTexture {
     }
 
     pub fn create(
-        context: &GraphicsContext,
+        device: &wgpu::Device,
+        width: u32,
+        height: u32,
         depth_format: wgpu::TextureFormat,
         sample_count: u32,
     ) -> Self {
-        let config = context.surface_config.lock().unwrap();
         let format = depth_format;
         let size = wgpu::Extent3d {
-            width: config.width,
-            height: config.height,
+            width,
+            height,
             depth_or_array_layers: 1,
         };
         let desc = wgpu::TextureDescriptor {
@@ -108,9 +133,9 @@ impl DepthTexture {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[format],
         };
-        let texture = context.device.create_texture(&desc);
+        let texture = device.create_texture(&desc);
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = context.device.create_sampler(&wgpu::SamplerDescriptor {
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -136,8 +161,8 @@ impl DepthTexture {
         }
     }
 
-    pub fn recreate(&mut self, context: &GraphicsContext) {
-        *self = Self::create(context, self.depth_format, self.sample_count);
+    pub fn recreate(&mut self, device: &wgpu::Device, width: u32, height: u32) {
+        *self = Self::create(device, width, height, self.depth_format, self.sample_count);
     }
 }
 
@@ -155,22 +180,6 @@ impl HdrTexture {
 
     pub fn bind_group(&self) -> &wgpu::BindGroup {
         &self.texture.bind_group
-    }
-
-    pub fn create_screen_sized(
-        ctx: &GraphicsContext,
-        sample_count: u32,
-        format: wgpu::TextureFormat,
-    ) -> Self {
-        let size = ctx.size();
-        Self::create(
-            &ctx.device,
-            size.width,
-            size.height,
-            sample_count,
-            format,
-            format!("Screen sized HDR with sample_count: {sample_count}"),
-        )
     }
 
     pub fn create(

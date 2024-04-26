@@ -3,14 +3,13 @@ use std::sync::Arc;
 use wgpu::{PushConstantRange, ShaderModule, ShaderStages};
 
 use crate::{
-    make_shader_source, rgba_bind_group_layout_cached, GraphicsContext, HotReload, ShaderCache,
-    ShaderSource,
+    graphics_context::GraphicsContextInner, make_shader_source, rgba_bind_group_layout_cached,
+    GraphicsContext, HotReload, ShaderCache, ShaderSource,
 };
 
 pub struct ToneMapping {
     pub enabled: bool,
     pipeline: wgpu::RenderPipeline,
-    ctx: GraphicsContext,
     output_format: wgpu::TextureFormat,
 }
 
@@ -19,16 +18,15 @@ const SHADER_SOURCE: ShaderSource =
 
 impl ToneMapping {
     pub fn new(
-        ctx: &GraphicsContext,
+        ctx: &GraphicsContextInner,
         output_format: wgpu::TextureFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
-        let shader = shader_cache.register(SHADER_SOURCE);
+        let shader = shader_cache.register(SHADER_SOURCE, &ctx.device);
         let pipeline = create_pipeline(&shader, &ctx.device, output_format);
         Self {
             enabled: true,
             pipeline,
-            ctx: ctx.clone(),
             output_format,
         }
     }
@@ -73,8 +71,8 @@ impl HotReload for ToneMapping {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.pipeline = create_pipeline(shader, &self.ctx.device, self.output_format)
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
+        self.pipeline = create_pipeline(shader, device, self.output_format)
     }
 }
 

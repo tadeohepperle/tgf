@@ -26,7 +26,7 @@ impl ParticleRenderer {
         cache: &mut ShaderCache,
     ) -> ParticleRenderer {
         let ctx = ctx.clone();
-        let shader = cache.register(SHADER_SOURCE);
+        let shader = cache.register(SHADER_SOURCE, &ctx.device);
         let pipeline = create_pipeline(&shader, &ctx, camera.bind_group_layout(), render_format);
         let camera_layout = camera.bind_group_layout().clone();
 
@@ -127,7 +127,7 @@ impl HotReload for ParticleRenderer {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
         self.pipeline = create_pipeline(shader, &self.ctx, &self.camera_layout, self.render_format);
     }
 }

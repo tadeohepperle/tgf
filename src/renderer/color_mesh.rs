@@ -50,7 +50,7 @@ impl ColorMeshRenderer {
         config: ColorMeshRendererConfig,
         cache: &mut ShaderCache,
     ) -> Self {
-        let shader = cache.register(SHADER_SOURCE);
+        let shader = cache.register(SHADER_SOURCE, &ctx.device);
         let pipeline = create_render_pipeline(&shader, &ctx.device, &config);
 
         ColorMeshRenderer {
@@ -146,8 +146,8 @@ impl HotReload for ColorMeshRenderer {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule) {
-        self.pipeline = create_render_pipeline(shader, &self.ctx.device, &self.config)
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
+        self.pipeline = create_render_pipeline(shader, device, &self.config)
     }
 }
 

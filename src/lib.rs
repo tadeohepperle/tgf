@@ -21,6 +21,8 @@ pub mod shader;
 pub mod texture;
 pub mod time;
 pub mod transform;
+
+#[cfg(feature = "ui")]
 pub mod ui;
 pub mod uniforms;
 pub mod utils;
