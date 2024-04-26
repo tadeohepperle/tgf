@@ -26,6 +26,12 @@ impl<T: Clone + Lerp> KeyFrames<T> {
         Self { frames }
     }
 
+    pub fn new_empty() -> Self {
+        Self {
+            frames: SmallVec::new(),
+        }
+    }
+
     pub fn normalize_time(mut self) -> Self {
         if self.frames.len() == 1 {
             self.frames.first_mut().unwrap().0 = 0.0;

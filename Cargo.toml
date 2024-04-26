@@ -29,6 +29,7 @@ tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread", "sync", "
 wgpu = { version = "0.19.3", features = ["naga"] }
 winit = "0.29.15"
 tgf-macros = { path = "./macros" }
+simple-easing = "1.0.1"
 
 [dev-dependencies]
 rand = "0.8.5"

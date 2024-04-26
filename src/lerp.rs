@@ -2,6 +2,8 @@ use glam::{DVec2, DVec3, Quat, Vec2, Vec3};
 
 pub use tgf_macros::Lerp;
 
+pub use simple_easing;
+
 pub trait Lerp {
     fn lerp(&self, other: &Self, factor: f32) -> Self;
 }
@@ -15,6 +17,16 @@ impl Lerp for f32 {
 impl Lerp for f64 {
     fn lerp(&self, other: &Self, factor: f32) -> Self {
         *self + (*other - *self) * factor as f64
+    }
+}
+
+impl Lerp for bool {
+    fn lerp(&self, other: &Self, factor: f32) -> Self {
+        if factor > 0.5 {
+            *other
+        } else {
+            *self
+        }
     }
 }
 

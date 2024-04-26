@@ -19,6 +19,7 @@ pub struct Color {
 }
 
 impl Lerp for Color {
+    #[inline]
     fn lerp(&self, other: &Self, factor: f32) -> Self {
         Self {
             r: self.r.lerp(&other.r, factor),

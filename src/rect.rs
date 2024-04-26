@@ -167,6 +167,11 @@ impl Aabb {
         self.max - self.min
     }
 
+    #[inline]
+    pub fn center(&self) -> Vec2 {
+        (self.max + self.min) / 2.0
+    }
+
     /// returns a vector where x is guaranteed to be 1.0 and y is y/x so the aspect ratio.
     #[inline]
     pub fn aspect_ratio(&self) -> Vec2 {
