@@ -47,7 +47,7 @@ pub use renderer::{
     RenderFormat,
 };
 
-pub use app::{AppT, Runner, RunnerCallbacks, RunnerConfig};
+pub use app::{AppT, Runner, RunnerCallbacks, WindowConfig};
 pub use asset::{AssetSource, AssetT, LoadingAsset};
 pub use bucket_array::BucketArray;
 pub use buffer::{GrowableBuffer, IndexBuffer, InstanceBuffer, ToRaw, UniformBuffer, VertexBuffer};

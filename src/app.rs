@@ -5,6 +5,7 @@ use winit::{
     event::{Event, WindowEvent},
     event_loop::EventLoop,
     monitor::MonitorHandle,
+    platform::x11::WindowBuilderExtX11,
     window::{Window, WindowBuilder},
 };
 
@@ -14,7 +15,7 @@ pub trait AppT {
     fn update(&mut self, cb: &mut RunnerCallbacks);
 }
 
-pub struct RunnerConfig {
+pub struct WindowConfig {
     pub window_name: &'static str,
     pub width: u32,
     pub height: u32,
@@ -27,7 +28,7 @@ pub enum MonitorPreference {
     Primary,
 }
 
-impl RunnerConfig {
+impl WindowConfig {
     pub fn new() -> Self {
         Self {
             window_name: "Vert App",
@@ -52,7 +53,7 @@ impl RunnerConfig {
         self
     }
 }
-impl Default for RunnerConfig {
+impl Default for WindowConfig {
     fn default() -> Self {
         Self::new()
     }
@@ -68,27 +69,9 @@ impl Runner {
         self.window.clone()
     }
 
-    pub fn new(config: RunnerConfig) -> Self {
-        let event_loop = EventLoop::new().unwrap();
-
-        // let _video_mode = monitor.video_modes().next();
-        // // let size = video_mode
-        // //     .clone()
-        // //     .map_or(PhysicalSize::new(800, 600), |vm| vm.size());
-
-        let size = PhysicalSize::new(config.width, config.height);
-
-        let mut window = WindowBuilder::new()
-            .with_visible(true)
-            .with_title(config.window_name)
-            .with_inner_size(size);
-
-        if let Some(monitor) = config.fullscreen {
-            let monitor = select_monitor(&event_loop, monitor);
-            window =
-                window.with_fullscreen(Some(winit::window::Fullscreen::Borderless(Some(monitor))));
-        };
-        let window = Arc::new(window.build(&event_loop).unwrap());
+    pub fn new(config: WindowConfig) -> Self {
+        let (window, event_loop) = create_window_and_event_loop(config);
+        let window = Arc::new(window);
 
         Self { event_loop, window }
     }
@@ -167,4 +150,26 @@ impl RunnerCallbacks {
     pub fn exit(&mut self, s: &str) {
         self.exit = Some(s.to_owned())
     }
+}
+
+pub fn create_window_and_event_loop(config: WindowConfig) -> (Window, EventLoop<()>) {
+    let event_loop = EventLoop::new().unwrap();
+
+    // let _video_mode = monitor.video_modes().next();
+    // // let size = video_mode
+    // //     .clone()
+    // //     .map_or(PhysicalSize::new(800, 600), |vm| vm.size());
+
+    let size = PhysicalSize::new(config.width, config.height);
+    let mut window = WindowBuilder::new()
+        .with_visible(true)
+        .with_title(config.window_name)
+        .with_base_size(size);
+
+    if let Some(monitor) = config.fullscreen {
+        let monitor = select_monitor(&event_loop, monitor);
+        window = window.with_fullscreen(Some(winit::window::Fullscreen::Borderless(Some(monitor))));
+    };
+
+    (window.build(&event_loop).unwrap(), event_loop)
 }
