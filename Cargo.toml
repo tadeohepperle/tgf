@@ -30,7 +30,7 @@ smallvec = "1.13.2"
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread", "sync", "time", "fs"] }
 wgpu = { version = "0.19.3", features = ["naga"] }
 winit = "0.29.15"
-tgf-macros = { path = "./macros" }
+tgf-macros = { path = "./macros", version = "0.0.2" }
 simple-easing = "1.0.1"
 
 [dev-dependencies]
