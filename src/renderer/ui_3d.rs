@@ -31,7 +31,6 @@ pub struct Ui3DRenderer {
     alpha_sdf_rect_pipeline: wgpu::RenderPipeline,
     glyph_pipeline: wgpu::RenderPipeline,
     render_format: RenderFormat,
-    ctx: GraphicsContext,
 }
 
 const SHADER_SOURCE: ShaderSource =
@@ -44,14 +43,12 @@ impl Ui3DRenderer {
     /// - ui_wgsl_path: String,
     /// - ui_3d_wgsl_path: String,
     pub fn new(
-        ctx: &GraphicsContext,
+        device: &wgpu::Device,
 
         render_format: RenderFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
-        let device = &ctx.device;
-
-        let shader = shader_cache.register(SHADER_SOURCE, &ctx.device);
+        let shader = shader_cache.register(SHADER_SOURCE, device);
 
         let glyph_pipeline = create_glyph_pipeline(&shader, device, render_format);
         let rect_pipeline = create_rect_pipeline(&shader, device, render_format);
@@ -66,7 +63,6 @@ impl Ui3DRenderer {
             glyph_pipeline,
             render_format,
             alpha_sdf_rect_pipeline,
-            ctx: ctx.clone(),
         }
     }
 

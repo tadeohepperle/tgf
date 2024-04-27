@@ -18,12 +18,12 @@ const SHADER_SOURCE: ShaderSource =
 
 impl ToneMapping {
     pub fn new(
-        ctx: &GraphicsContextInner,
+        device: &wgpu::Device,
         output_format: wgpu::TextureFormat,
         shader_cache: &mut ShaderCache,
     ) -> Self {
-        let shader = shader_cache.register(SHADER_SOURCE, &ctx.device);
-        let pipeline = create_pipeline(&shader, &ctx.device, output_format);
+        let shader = shader_cache.register(SHADER_SOURCE, device);
+        let pipeline = create_pipeline(&shader, device, output_format);
         Self {
             enabled: true,
             pipeline,

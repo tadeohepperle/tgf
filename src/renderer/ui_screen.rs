@@ -19,15 +19,12 @@ pub struct UiScreenRenderer {
     textured_rect_pipeline: wgpu::RenderPipeline,
     alpha_sdf_rect_pipeline: wgpu::RenderPipeline,
     glyph_pipeline: wgpu::RenderPipeline,
-    ctx: GraphicsContext,
 }
 
 impl UiScreenRenderer {
     /// The shader source should include `ui.wgsl` and `alpha_sdf.wgsl`.
-    pub fn new(ctx: &GraphicsContext, shader_cache: &mut ShaderCache) -> Self {
-        let shader = shader_cache.register(SHADER_SOURCE, &ctx.device);
-
-        let device = &ctx.device;
+    pub fn new(device: &wgpu::Device, shader_cache: &mut ShaderCache) -> Self {
+        let shader = shader_cache.register(SHADER_SOURCE, device);
         let glyph_pipeline = create_glyph_pipeline(&shader, device);
         let rect_pipeline = create_rect_pipeline(&shader, device);
         let textured_rect_pipeline = create_textured_rect_pipeline(&shader, device);
@@ -38,7 +35,6 @@ impl UiScreenRenderer {
             textured_rect_pipeline,
             alpha_sdf_rect_pipeline,
             glyph_pipeline,
-            ctx: ctx.clone(),
         }
     }
 

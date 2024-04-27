@@ -434,11 +434,15 @@ impl ElementBatchesGR {
         }
     }
 
-    pub fn prepare(&mut self, batches: &ElementBatches, ctx: &GraphicsContext) {
-        self.rects.prepare(&batches.rects, &ctx.device, &ctx.queue);
+    pub fn prepare(
+        &mut self,
+        batches: &ElementBatches,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) {
+        self.rects.prepare(&batches.rects, device, queue);
         self.textured_rects
-            .prepare(&batches.textured_rects, &ctx.device, &ctx.queue);
-        self.glyphs
-            .prepare(&batches.glyphs, &ctx.device, &ctx.queue);
+            .prepare(&batches.textured_rects, device, queue);
+        self.glyphs.prepare(&batches.glyphs, device, queue);
     }
 }

@@ -34,6 +34,11 @@ impl GizmosVertexQueue {
         Self(vec![])
     }
 
+    #[inline(always)]
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+
     pub fn draw_line(&mut self, from: Vec3, to: Vec3, color: Color) {
         self.0.push(Vertex { pos: from, color });
         self.0.push(Vertex { pos: to, color });

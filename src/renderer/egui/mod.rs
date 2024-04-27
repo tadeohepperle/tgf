@@ -34,7 +34,11 @@ pub struct Egui {
 }
 
 impl Egui {
-    pub fn new(ctx: &GraphicsContext, window: &Window) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        surface_format: wgpu::TextureFormat,
+        window: &Window,
+    ) -> Self {
         // Important note: pixels_per_point is the inverse of the devices scale_factor.
 
         let platform = Platform::new(PlatformDescriptor {
@@ -44,7 +48,7 @@ impl Egui {
             style: Default::default(),
         });
 
-        let renderer = egui_wgpu::Renderer::new(&ctx.device, ctx.surface_format, None, 1);
+        let renderer = egui_wgpu::Renderer::new(device, surface_format, None, 1);
         // renderer.render(render_pass, paint_jobs, self.platform);
         Egui {
             platform,
@@ -88,7 +92,12 @@ impl Egui {
             .render(&mut render_pass, &self.paint_jobs, &screen_descriptor);
     }
 
-    pub fn prepare(&mut self, ctx: &GraphicsContext, encoder: &mut wgpu::CommandEncoder) {
+    pub fn prepare(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        encoder: &mut wgpu::CommandEncoder,
+    ) {
         let output = self.platform.end_frame();
         self.paint_jobs.clear();
         for id in self.textures_delta.free.drain(..) {
@@ -97,7 +106,7 @@ impl Egui {
         self.textures_delta = output.textures_delta;
         for (id, image_delta) in self.textures_delta.set.iter() {
             self.renderer
-                .update_texture(&ctx.device, &ctx.queue, *id, image_delta);
+                .update_texture(device, queue, *id, image_delta);
         }
 
         self.paint_jobs = self
@@ -106,13 +115,8 @@ impl Egui {
             .tessellate(output.shapes, output.pixels_per_point);
 
         let screen_descriptor = self.platform.screen_descriptor();
-        self.renderer.update_buffers(
-            &ctx.device,
-            &ctx.queue,
-            encoder,
-            &self.paint_jobs,
-            &screen_descriptor,
-        );
+        self.renderer
+            .update_buffers(device, queue, encoder, &self.paint_jobs, &screen_descriptor);
     }
 
     pub fn receive_window_event(&mut self, event: &WindowEvent) {

@@ -1,5 +1,7 @@
 use std::sync::{Arc, LazyLock, OnceLock};
 
+use bytemuck::Zeroable;
+
 use crate::{
     input::InputRaw, Camera3d, Camera3dRaw, GraphicsContext, Input, Screen, ScreenRaw, Time,
     TimeRaw, ToRaw, UniformBuffer,
@@ -23,13 +25,7 @@ impl Uniforms {
             .expect("GlobalUniforms not initialized yet!")
     }
 
-    pub fn new(
-        device: &wgpu::Device,
-        camera: &Camera3d,
-        screen: &Screen,
-        time: &Time,
-        input: &Input,
-    ) -> Self {
+    pub fn new(device: &wgpu::Device) -> Self {
         let bind_group_layout = GLOBAL_UNIFORMS_BIND_GROUP_LAYOUT
             .get_or_init(|| {
                 let entry = |binding: u32| wgpu::BindGroupLayoutEntry {
@@ -53,10 +49,10 @@ impl Uniforms {
             })
             .clone();
 
-        let camera = UniformBuffer::new(camera.to_raw(), device);
-        let screen = UniformBuffer::new(screen.to_raw(), device);
-        let time = UniformBuffer::new(time.to_raw(), device);
-        let input = UniformBuffer::new(input.to_raw(), device);
+        let camera = UniformBuffer::new(Camera3dRaw::zeroed(), device);
+        let screen = UniformBuffer::new(ScreenRaw::zeroed(), device);
+        let time = UniformBuffer::new(TimeRaw::zeroed(), device);
+        let input = UniformBuffer::new(InputRaw::zeroed(), device);
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Globals BindGroup"),

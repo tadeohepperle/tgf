@@ -79,7 +79,7 @@ impl DefaultWorld {
 
         let input = Input::new();
 
-        let uniforms = Uniforms::new(&ctx.device, &camera, &screen, &time, &input);
+        let uniforms = Uniforms::new(&ctx.device);
 
         let screen_textures = ScreenTextures::new(
             &ctx.device,
@@ -87,8 +87,11 @@ impl DefaultWorld {
             size.height,
             RenderFormat::HDR_MSAA4,
         );
-        let tone_mapping =
-            ToneMapping::new(&ctx, RenderFormat::LDR_NO_MSAA.color, &mut shader_cache);
+        let tone_mapping = ToneMapping::new(
+            &ctx.device,
+            RenderFormat::LDR_NO_MSAA.color,
+            &mut shader_cache,
+        );
         let bloom = Bloom::new(
             &ctx.device,
             size.width,
@@ -96,11 +99,11 @@ impl DefaultWorld {
             RenderFormat::HDR_MSAA4.color,
             &mut shader_cache,
         );
-        let egui = Egui::new(&ctx, &window);
+        let egui = Egui::new(&ctx.device, ctx.surface_format, &window);
         let color_renderer = ColorMeshRenderer::new(&ctx, Default::default(), &mut shader_cache);
         let gizmos = Gizmos::new(&ctx, RenderFormat::HDR_MSAA4, &mut shader_cache);
 
-        let ui_renderer = UiScreenRenderer::new(&ctx, &mut shader_cache);
+        let ui_renderer = UiScreenRenderer::new(&ctx.device, &mut shader_cache);
         let ui = Board::new(&mut (), REFERENCE_SCREEN_SIZE_D);
         let ui_gr = ElementBatchesGR::new(&ui.batches, &ctx.device);
 
@@ -159,8 +162,10 @@ impl DefaultWorld {
         self.color_renderer.prepare();
         self.gizmos.prepare();
 
-        self.egui.prepare(&self.ctx, encoder);
-        self.ui_gr.prepare(&self.ui.batches, &self.ctx);
+        self.egui
+            .prepare(&self.ctx.device, &self.ctx.queue, encoder);
+        self.ui_gr
+            .prepare(&self.ui.batches, &self.ctx.device, &self.ctx.queue);
         self.uniforms.prepare(
             &self.ctx.queue,
             &self.camera,
