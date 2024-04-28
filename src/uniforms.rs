@@ -1,10 +1,10 @@
-use std::sync::{Arc, LazyLock, OnceLock};
+use std::sync::{Arc, OnceLock};
 
 use bytemuck::Zeroable;
 
 use crate::{
-    input::InputRaw, Camera3d, Camera3dRaw, GraphicsContext, Input, Screen, ScreenRaw, Time,
-    TimeRaw, ToRaw, UniformBuffer,
+    input::InputRaw, Camera3d, Camera3dRaw, Input, Screen, ScreenRaw, Time, TimeRaw, ToRaw,
+    UniformBuffer,
 };
 
 static GLOBAL_UNIFORMS_BIND_GROUP_LAYOUT: OnceLock<Arc<wgpu::BindGroupLayout>> = OnceLock::new();

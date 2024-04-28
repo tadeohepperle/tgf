@@ -2,7 +2,7 @@ use std::{ops::Range, rc::Rc, sync::Arc, vec};
 
 use crate::{
     make_shader_source, rgba_bind_group_layout_cached,
-    shader::{ShaderCache, ShaderFile},
+    shader::{ShaderCache},
     utils::rc_addr_as_u64,
     Aabb, BindableTexture, Camera3d, Camera3dGR, Color, GraphicsContext, GrowableBuffer, HotReload,
     RenderFormat, ShaderSource, ToRaw, Transform, TransformRaw, VertexT, VertsLayout,

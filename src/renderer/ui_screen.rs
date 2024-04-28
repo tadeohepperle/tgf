@@ -1,8 +1,7 @@
-use std::sync::Arc;
 
 use crate::{
-    make_shader_source, rgba_bind_group_layout_cached, uniforms::Uniforms, GraphicsContext,
-    HotReload, ScreenGR, ShaderCache, ShaderSource, VertexT, VertsLayout,
+    make_shader_source, rgba_bind_group_layout_cached, uniforms::Uniforms,
+    HotReload, ShaderCache, ShaderSource, VertexT, VertsLayout,
 };
 
 use wgpu::{RenderPipelineDescriptor, TextureView, VertexState};

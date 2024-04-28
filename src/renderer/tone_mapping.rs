@@ -1,10 +1,8 @@
-use std::sync::Arc;
 
-use wgpu::{PushConstantRange, ShaderModule, ShaderStages};
+use wgpu::{PushConstantRange, ShaderStages};
 
 use crate::{
-    graphics_context::GraphicsContextInner, make_shader_source, rgba_bind_group_layout_cached,
-    GraphicsContext, HotReload, ShaderCache, ShaderSource,
+    make_shader_source, rgba_bind_group_layout_cached, HotReload, ShaderCache, ShaderSource,
 };
 
 pub struct ToneMapping {

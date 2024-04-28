@@ -1,6 +1,5 @@
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{parse_quote, TypePath};
+use quote::quote;
 
 /// Derives the Lerp trait for a struct where each field implements Lerp.
 /// For example the Struct:

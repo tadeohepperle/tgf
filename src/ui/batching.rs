@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
-    renderer::sdf_sprite::AlphaSdfParams, Aabb, BindableTexture, Color, GraphicsContext,
+    renderer::sdf_sprite::AlphaSdfParams, Aabb, BindableTexture, Color,
     GrowableBuffer, VertexT,
 };
 use wgpu::BufferUsages;

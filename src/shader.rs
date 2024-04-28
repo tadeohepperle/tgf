@@ -2,7 +2,7 @@ use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use egui::ahash::{HashSet, HashSetExt};
 
-use crate::{FileChangeWatcher, GraphicsContext};
+use crate::FileChangeWatcher;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ShaderFile {
@@ -130,7 +130,6 @@ impl ShaderCache {
                 wgsl = file.wgsl.to_owned();
                 std::fs::write(&path, &file.wgsl).unwrap();
             }
-            println!("Watch path {path}");
             watcher.watch(&path);
         } else {
             wgsl = file.wgsl.to_owned();

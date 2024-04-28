@@ -310,6 +310,7 @@ impl Input {
         self.cursor_just_left
     }
 
+    #[inline(always)]
     pub fn cursor_pos(&self) -> Vec2 {
         self.cursor_pos
     }

@@ -1,7 +1,6 @@
-use std::{fmt::Debug, rc::Rc};
+use std::{fmt::Debug};
 
-use crate::{BindableTexture, Camera3DTransform, Time, Transform};
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use crate::{BindableTexture, Time, Transform};
 
 use super::RawParticle;
 

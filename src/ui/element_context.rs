@@ -155,7 +155,7 @@ where
 }
 
 impl IntoElement for () {
-    fn into_element(&mut self, ctx: &mut ElementContext) -> Element {
+    fn into_element(&mut self, _ctx: &mut ElementContext) -> Element {
         Element::Div(div())
     }
 }

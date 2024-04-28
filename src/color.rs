@@ -249,21 +249,4 @@ pub fn hsv_to_rgb(hue: f64, saturation: f64, value: f64) -> Color {
     };
 
     return Color::new((r + m) as f32, (g + m) as f32, (b + m) as f32);
-
-    fn check_bounds(hue: f64, saturation: f64, value: f64) {
-        fn panic_bad_params(name: &str, from_value: &str, to_value: &str, supplied: f64) -> ! {
-            panic!(
-                "param {} must be between {} and {} inclusive; was: {}",
-                name, from_value, to_value, supplied
-            )
-        }
-
-        if !(0.0..=360.0).contains(&hue) {
-            panic_bad_params("hue", "0.0", "360.0", hue)
-        } else if !(0.0..=1.0).contains(&saturation) {
-            panic_bad_params("saturation", "0.0", "1.0", saturation)
-        } else if !(0.0..=1.0).contains(&value) {
-            panic_bad_params("value", "0.0", "1.0", value)
-        }
-    }
 }

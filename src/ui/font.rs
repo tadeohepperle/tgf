@@ -1,8 +1,8 @@
-use std::{fmt::Debug, hash::Hasher};
+use std::fmt::Debug;
 
 use ahash::AHashMap;
 
-use crate::{utils::next_pow2_number, Aabb, BindableTexture, GraphicsContext, Texture};
+use crate::{utils::next_pow2_number, Aabb, BindableTexture, Texture};
 use etagere::Size;
 use fontdue::LineMetrics;
 use glam::vec2;
@@ -23,7 +23,7 @@ pub struct SdfFont {
     sdf_glyphs: AHashMap<char, SdfGlyph>,
     atlas_allocator: etagere::AtlasAllocator,
     atlas_image: image::GrayImage,
-    atlas_dbg: image::RgbaImage,
+    _atlas_dbg: image::RgbaImage,
     atlas_texture: BindableTexture,
 }
 
@@ -131,15 +131,15 @@ impl SdfFont {
             atlas_allocator,
             atlas_image,
             atlas_texture,
-            atlas_dbg: image::RgbaImage::new(atlas_size as u32, atlas_size as u32),
+            _atlas_dbg: image::RgbaImage::new(atlas_size as u32, atlas_size as u32),
             pad_size,
         }
     }
 
-    pub fn from_bytes(data: &[u8], ctx: &GraphicsContext) -> Self {
+    pub fn from_bytes(data: &[u8], device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
         let font =
             fontdue::Font::from_bytes(data, Default::default()).expect("data must be valid ttf");
-        let sdf_font = Self::new_with_default_chars(font, 64, 16, &ctx.device, &ctx.queue);
+        let sdf_font = Self::new_with_default_chars(font, 64, 16, device, queue);
         sdf_font
     }
 
@@ -294,14 +294,14 @@ pub struct GlyphInfo {
 }
 
 struct SdfGlyph {
-    char: char,
-    font_size: u32,
-    metrics: Metrics,
+    _char: char,
+    _font_size: u32,
+    _metrics: Metrics,
     // pad is font_size/8 in each direction. This does not depend on the glyphs size.
-    pad: u32,
+    _pad: u32,
     // metrics but with pad px in all directions. This does not affect the advance.
     metrics_with_pad: Metrics,
-    gray: image::GrayImage,
+    _gray: image::GrayImage,
     sdf: image::GrayImage,
 }
 
@@ -338,12 +338,12 @@ impl SdfGlyph {
         let sdf = image::GrayImage::from(sdf_glyph);
 
         SdfGlyph {
-            char: ch,
-            font_size,
-            metrics,
-            pad,
+            _char: ch,
+            _font_size: font_size,
+            _metrics: metrics,
+            _pad: pad,
             metrics_with_pad,
-            gray,
+            _gray: gray,
             sdf,
         }
     }

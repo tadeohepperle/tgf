@@ -1,13 +1,12 @@
-use std::sync::Arc;
 
 use glam::{vec3, Vec3};
 use wgpu::{
-    core::device::queue, BindGroupLayout, BufferUsages, FragmentState, PrimitiveState,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, VertexState,
+    BufferUsages, FragmentState, PrimitiveState,
+    RenderPipelineDescriptor, VertexState,
 };
 
 use crate::{
-    make_shader_source, uniforms::Uniforms, Camera3dGR, Color, GraphicsContext, GrowableBuffer,
+    make_shader_source, uniforms::Uniforms, Color, GraphicsContext, GrowableBuffer,
     HotReload, ImmediateMeshQueue, ImmediateMeshRanges, RenderFormat, ShaderCache, ShaderSource,
     ToRaw, Transform, TransformRaw, VertexT, VertsLayout,
 };

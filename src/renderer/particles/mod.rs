@@ -1,12 +1,9 @@
 use std::{
-    f32::consts::PI,
     fmt::Debug,
-    time::{Duration, Instant},
 };
 
-use crate::{Aabb, Color, GraphicsContext, InstanceBuffer, Time, ToRaw, Transform, VertexT};
-use glam::{vec2, vec3, Vec2, Vec3, Vec4};
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use crate::{Aabb, Color, VertexT};
+use glam::{Vec2, Vec3};
 
 mod particle_renderer;
 pub use particle_renderer::ParticleRenderer;

@@ -1,7 +1,6 @@
-use std::sync::Arc;
 
 use crate::{
-    make_shader_source, rgba_bind_group_layout_cached, Camera3dGR, Color, HotReload, RenderFormat,
+    make_shader_source, rgba_bind_group_layout_cached, Color, HotReload, RenderFormat,
     ShaderCache, ShaderSource, ToRaw, Transform, TransformRaw, Uniforms, VertexT, VertsLayout,
 };
 use crate::{
@@ -11,7 +10,6 @@ use crate::{
         },
         Board,
     },
-    GraphicsContext,
 };
 
 use wgpu::{RenderPipelineDescriptor, TextureView, VertexState};

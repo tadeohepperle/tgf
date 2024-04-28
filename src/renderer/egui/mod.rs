@@ -6,7 +6,6 @@ use winit::{event::WindowEvent, window::Window};
 
 use self::platform::{Platform, PlatformDescriptor};
 
-use crate::GraphicsContext;
 
 pub mod platform;
 

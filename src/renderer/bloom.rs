@@ -1,12 +1,10 @@
-use std::{borrow::Cow, sync::Arc};
 
 use crate::{
-    graphics_context::{GraphicsContext, GraphicsContextInner},
     make_shader_source, rgba_bind_group_layout_cached,
     uniforms::Uniforms,
-    HdrTexture, HotReload, ScreenGR, ShaderCache, ShaderSource,
+    HdrTexture, HotReload, ShaderCache, ShaderSource,
 };
-use wgpu::{BindGroupLayout, BlendComponent, BlendFactor, BlendOperation, BlendState};
+use wgpu::{BlendComponent, BlendFactor, BlendOperation, BlendState};
 use winit::dpi::PhysicalSize;
 
 #[derive(Debug, Clone, PartialEq)]

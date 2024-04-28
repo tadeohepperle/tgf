@@ -1,14 +1,11 @@
 use std::{
-    cell::Cell,
     ops::Deref,
     sync::{Arc, Mutex},
 };
 
-use glam::DVec2;
 use wgpu::SurfaceConfiguration;
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::ShaderCache;
 
 #[derive(Debug, Clone)]
 pub struct GraphicsContext(Arc<GraphicsContextInner>);

@@ -2,17 +2,13 @@ use std::sync::Arc;
 
 use crate::{
     edit,
-    renderer::{screen_textures, ui_screen::UiScreenRenderer},
-    time::TimeGR,
-    ui::{batching::ElementBatchesGR, div, Board, REFERENCE_SCREEN_SIZE_D},
+    renderer::ui_screen::UiScreenRenderer,
+    ui::{batching::ElementBatchesGR, Board, REFERENCE_SCREEN_SIZE_D},
     uniforms::Uniforms,
-    utils::camera_controllers::FlyCamController,
-    AppT, Bloom, Camera3d, Camera3dGR, Color, ColorMeshRenderer, Egui, Gizmos, GraphicsContext,
-    Input, KeyCode, RenderFormat, Runner, RunnerCallbacks, Screen, ScreenGR, ScreenTextures,
-    ShaderCache, Time, ToneMapping, Transform, Window,
+    AppT, Bloom, Camera3d, Color, ColorMeshRenderer, Egui, Gizmos, GraphicsContext, Input,
+    RenderFormat, Runner, RunnerCallbacks, Screen, ScreenTextures, ShaderCache, Time, ToneMapping,
+    Window,
 };
-use glam::{Quat, Vec3};
-use wgpu::{RenderPassColorAttachment, RenderPassDescriptor};
 use winit::{dpi::PhysicalSize, event::WindowEvent};
 
 /// use it like this.
@@ -54,7 +50,7 @@ impl AppT for DefaultWorld {
         }
     }
 
-    fn update(&mut self, cb: &mut RunnerCallbacks) {
+    fn update(&mut self, _cb: &mut RunnerCallbacks) {
         self.start_frame();
         // /////////////////////////////////////////////////////////////////////////////
         // Your update logic here!

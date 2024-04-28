@@ -27,6 +27,11 @@ impl ElementBox {
         self.element_mut().set_position(pos_offset);
     }
 
+    pub fn layout_centered_to_own_size(&mut self) {
+        let own_size = self.element_mut().get_and_set_size(DVec2::MAX);
+        self.element_mut().set_position(-own_size * dvec2(0.5, 0.5));
+    }
+
     pub fn layout_relative_to_own_size(&mut self, unit_pos: DVec2, pos_offset: DVec2) {
         let own_size = self.element_mut().get_and_set_size(DVec2::MAX);
         self.element_mut()

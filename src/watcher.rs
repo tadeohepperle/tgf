@@ -13,14 +13,17 @@ pub struct FileChangeWatcher {
 }
 
 impl FileChangeWatcher {
-    pub fn watch(&mut self, file: &str) {
+    /// returns true if the watchers started watching the file, false if already watching
+    pub fn watch(&mut self, file: &str) -> bool {
         let path: PathBuf = file.parse().unwrap();
         if !self.paths_to_watch.contains(&path) {
             self._watcher
                 .watch(&path, RecursiveMode::NonRecursive)
                 .unwrap();
             self.paths_to_watch.push(path);
+            return true;
         }
+        false
     }
 
     pub fn new(files: &[String]) -> Self {

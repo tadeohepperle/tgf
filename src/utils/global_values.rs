@@ -264,7 +264,7 @@ impl DefaultParams for (Vec3, Vec3) {
 impl EditableValue for bool {
     type Params = ();
 
-    fn edit(&mut self, params: &Self::Params, ui: &mut egui::Ui) {
+    fn edit(&mut self, _params: &Self::Params, ui: &mut egui::Ui) {
         ui.add(Checkbox::new(self, "active"));
     }
 }

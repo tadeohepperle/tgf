@@ -1,8 +1,7 @@
-use std::sync::Arc;
 
 use crate::{
-    graphics_context::GraphicsContextInner, rgba_bind_group_layout_cached,
-    rgba_bind_group_layout_msaa4_cached, BindableTexture, Color, GraphicsContext, RenderFormat,
+    rgba_bind_group_layout_cached,
+    rgba_bind_group_layout_msaa4_cached, BindableTexture, Color, RenderFormat,
     Texture,
 };
 use log::warn;

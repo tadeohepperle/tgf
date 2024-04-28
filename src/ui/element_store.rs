@@ -12,7 +12,7 @@ use crate::ui::{
 
 use super::element_id::ElementId;
 use ahash::AHashMap;
-use glam::{DVec2, Vec2};
+use glam::{DVec2};
 
 thread_local! {
     static STORED_ELEMENTS : ElementStore =  ElementStore::new();

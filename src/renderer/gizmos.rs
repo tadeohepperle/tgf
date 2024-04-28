@@ -1,19 +1,15 @@
-use std::sync::Arc;
 
 use glam::vec2;
 use glam::vec3;
 use glam::Vec3;
-use wgpu::BindGroupLayout;
 use wgpu::BufferUsages;
 use wgpu::FragmentState;
 use wgpu::PrimitiveState;
-use wgpu::ShaderModuleDescriptor;
 use wgpu::VertexState;
 
 use crate::make_shader_source;
 use crate::uniforms::Uniforms;
 use crate::Aabb;
-use crate::Camera3dGR;
 use crate::Color;
 use crate::GraphicsContext;
 use crate::GrowableBuffer;

@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use crate::{
     make_shader_source, rgba_bind_group_layout_cached, texture::white_px_texture_cached,
-    BindableTexture, Camera3dGR, GraphicsContext, HotReload, RenderFormat, ShaderCache,
-    ShaderSource, ToRaw, Transform, TransformRaw, VertsLayout,
+    Camera3dGR, GraphicsContext, HotReload, RenderFormat, ShaderCache, ShaderSource, ToRaw,
+    TransformRaw, VertsLayout,
 };
-use wgpu::{util::RenderEncoder, RenderPass, ShaderStages};
+use wgpu::ShaderStages;
 
 use super::{ParticleSystem, RawParticle};
 
@@ -127,7 +127,7 @@ impl HotReload for ParticleRenderer {
         SHADER_SOURCE
     }
 
-    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
+    fn hot_reload(&mut self, shader: &wgpu::ShaderModule, _device: &wgpu::Device) {
         self.pipeline = create_pipeline(shader, &self.ctx, &self.camera_layout, self.render_format);
     }
 }
