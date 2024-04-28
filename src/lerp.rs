@@ -4,6 +4,15 @@ pub use tgf_macros::Lerp;
 
 pub use simple_easing;
 
+/// 0 -> 0
+/// 0.5 -> 1
+/// 1 -> 0
+#[inline(always)]
+pub fn quad_010(x: f32) -> f32 {
+    let e = 2.0 * x - 1.0;
+    1.0 - (e * e)
+}
+
 pub trait Lerp {
     fn lerp(&self, other: &Self, factor: f32) -> Self;
 }

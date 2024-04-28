@@ -205,6 +205,35 @@ impl Add<f32> for Color {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Hsv {
+    pub hue: f64,
+    pub saturation: f64,
+    pub value: f64,
+}
+
+impl Hsv {
+    pub const WHITE: Hsv = Hsv::new(0.0, 0.0, 1.0);
+    pub const BLACK: Hsv = Hsv::new(0.0, 0.0, 0.0);
+    pub const RED: Hsv = Hsv::new(0.0, 1.0, 1.0);
+    pub const GREEN: Hsv = Hsv::new(120.0, 1.0, 1.0);
+    pub const BLUE: Hsv = Hsv::new(240.0, 1.0, 1.0);
+
+    pub const fn new(hue: f64, saturation: f64, value: f64) -> Self {
+        Self {
+            hue,
+            saturation,
+            value,
+        }
+    }
+}
+
+impl From<Hsv> for Color {
+    fn from(value: Hsv) -> Self {
+        Color::from_hsv(value.hue, value.saturation, value.value)
+    }
+}
+
 /// Credit: https://github.com/jayber/hsv/blob/main/src/lib.rs
 ///
 /// Converts values in HSV color space to RGB
