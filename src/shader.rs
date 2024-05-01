@@ -103,8 +103,10 @@ impl ShaderCache {
             }
         }
 
+        dbg!(reload.len());
         for r in reload {
             let source = r.source();
+
             let mut wgsl = String::new();
             for f in source.files {
                 wgsl.push_str(self.current_wgsl.get(f).unwrap());

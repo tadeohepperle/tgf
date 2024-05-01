@@ -1,10 +1,10 @@
-use std::{sync::Arc};
+use std::sync::Arc;
 
 use std::rc::Rc;
 
 use crate::{Aabb, AlphaSdfParams, BindableTexture, Color};
 
-use glam::{DVec2, Vec2};
+use glam::{vec2, DVec2, Vec2};
 use smallvec::{smallvec, SmallVec};
 
 use crate::ui::{
@@ -244,6 +244,11 @@ pub struct TextureRegion {
 impl TextureRegion {
     pub fn scale(mut self, factor: f32) -> TextureRegion {
         self.uv = self.uv.scale(factor);
+        self
+    }
+
+    pub fn flipped_x(mut self) -> TextureRegion {
+        self.uv = self.uv.flipped_x();
         self
     }
 }

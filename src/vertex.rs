@@ -88,6 +88,6 @@ struct VertexOrInstance {
     pub attributes: SmallVec<[VertexAttribute; 8]>,
 }
 
-pub trait VertexT: 'static + Sized {
+pub trait VertexT: 'static + Sized + bytemuck::Pod + bytemuck::Zeroable {
     const ATTRIBUTES: &'static [wgpu::VertexFormat];
 }

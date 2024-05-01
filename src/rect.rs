@@ -120,6 +120,30 @@ impl Aabb {
         Self { min, max }
     }
 
+    pub const fn flipped_x(self) -> Self {
+        Aabb {
+            min: vec2(self.max.x, self.min.y),
+            max: vec2(self.min.x, self.max.y),
+        }
+    }
+
+    /// this is the default, assuming that a sprite is looking to the right, if the aabb has max_x > min_x
+    pub fn looking_to_right(self) -> Self {
+        if self.max.x < self.min.x {
+            return self.flipped_x();
+        } else {
+            self
+        }
+    }
+
+    pub fn looking_to_left(self) -> Self {
+        if self.max.x > self.min.x {
+            return self.flipped_x();
+        } else {
+            self
+        }
+    }
+
     pub fn overlap_area(&self, other: &Aabb) -> f32 {
         let width_overlap = self.max.x.min(other.max.x) - self.min.x.max(other.min.x);
         let height_overlap = self.max.y.min(other.max.y) - self.min.y.max(other.min.y);
