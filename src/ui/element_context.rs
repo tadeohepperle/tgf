@@ -242,6 +242,10 @@ impl<T: std::fmt::Debug + Clone + Copy + PartialEq> HotState<T> {
         }
     }
 
+    pub fn is(&self, id: T) -> bool {
+        matches!(self, HotState::Hot(i) | HotState::Active(i) if *i == id)
+    }
+
     #[inline]
     pub fn is_none(&self) -> bool {
         matches!(self, HotState::None)

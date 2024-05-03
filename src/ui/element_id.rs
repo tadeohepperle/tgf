@@ -9,7 +9,7 @@ use ahash::AHasher;
 /// Inner value should be a hash, not something directly chosen.
 ///
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ElementId(NonZeroU64);
+pub struct ElementId(pub NonZeroU64);
 
 impl ElementId {
     pub fn is_none(&self) -> bool {
