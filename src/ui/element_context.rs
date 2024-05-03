@@ -1,4 +1,5 @@
 use crate::{Input, MouseButtonState, PhysicalSize, PressState};
+use etagere::euclid::default;
 use glam::{dvec2, DVec2, Vec2};
 
 use crate::ui::{
@@ -20,7 +21,7 @@ pub struct ElementContext {
     // a `StoredElement::set_position()` pass. That means, that children, come first, then their parents. Explicit z index is not regarded here...
     // To find the first element hit by a mouse cursor, search from front to back.
     id_bounds: Vec<(ElementId, ComputedBounds)>,
-    hot_active: HotState<ElementId>,
+    hot_state: HotState<ElementId>,
     just_started_click: Option<ElementId>,
     just_ended_click: Option<ElementId>,
 }
@@ -29,15 +30,29 @@ impl ElementContext {
     pub fn new() -> Self {
         ElementContext {
             id_bounds: vec![],
-            hot_active: HotState::None,
+            hot_state: HotState::None,
             just_started_click: None,
             just_ended_click: None,
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn clear_id_bounds(&mut self) {
         self.id_bounds.clear()
+    }
+
+    #[inline(always)]
+    pub fn hot_state(&self) -> HotState<ElementId> {
+        self.hot_state
+    }
+
+    #[inline(always)]
+    pub fn state(&self, id: ElementId) -> InteractionState {
+        InteractionState {
+            hot_active: self.hot_state.hot_active(id),
+            just_started_click: self.just_started_click == Some(id),
+            just_ended_click: self.just_ended_click == Some(id),
+        }
     }
 
     #[inline(always)]
@@ -59,7 +74,7 @@ impl ElementContext {
         let left_mouse_down = mouse.left().pressed();
         self.just_started_click = None;
         self.just_ended_click = None;
-        self.hot_active.transition(
+        self.hot_state.transition(
             hovered,
             left_mouse_down,
             &mut self.just_started_click,
@@ -203,11 +218,19 @@ impl ComputedBoundsVisitor for ElementContext {
 //     }
 // }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum HotState<T: std::fmt::Debug + Clone + Copy + PartialEq> {
+    #[default]
     None,
     Hot(T),
     Active(T),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InteractionState {
+    pub hot_active: HotActive,
+    pub just_started_click: bool,
+    pub just_ended_click: bool,
 }
 
 impl<T: std::fmt::Debug + Clone + Copy + PartialEq> HotState<T> {
@@ -217,6 +240,11 @@ impl<T: std::fmt::Debug + Clone + Copy + PartialEq> HotState<T> {
             HotState::Active(i) if *i == id => HotActive::Active,
             _ => HotActive::None,
         }
+    }
+
+    #[inline]
+    pub fn is_none(&self) -> bool {
+        matches!(self, HotState::None)
     }
 
     pub fn transition(
@@ -262,8 +290,9 @@ impl<T: std::fmt::Debug + Clone + Copy + PartialEq> HotState<T> {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub enum HotActive {
+    #[default]
     None,
     /// Means: Hovered
     Hot,

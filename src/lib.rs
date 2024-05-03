@@ -47,6 +47,8 @@ pub use renderer::{
     RenderFormat,
 };
 
+pub use ui::element_context::{ElementContext, InteractionState, HotActive, HotState};
+
 pub use app::{AppT, Runner, RunnerCallbacks, WindowConfig};
 pub use asset::{AssetSource, AssetT, LoadingAsset};
 pub use bucket_array::BucketArray;
