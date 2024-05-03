@@ -12,36 +12,48 @@ use crate::ui::{
     Align, Axis, Div, ElementWithComputed, MainAlign, SdfFont, Text, TextSection,
 };
 
+use super::element_store::StoredElement;
+use super::ElementId;
+
 impl ElementBox {
     /// performs the size-getting part of the layout. After this, the sizes in the computed values of this element and all sub-elements are set.
     pub fn calculate_size(&mut self) -> DVec2 {
-        self.element_mut().get_and_set_size(DVec2::MAX)
+        self.get_and_set_size(DVec2::MAX)
     }
 
-    pub fn layout(&mut self) {
-        self.layout_in_size(DVec2::MAX, DVec2::ZERO);
+    pub fn layout(&mut self, visitor: &mut impl ComputedBoundsVisitor) {
+        self.layout_in_size(DVec2::MAX, DVec2::ZERO, visitor);
     }
 
-    pub fn layout_in_size(&mut self, size: DVec2, pos_offset: DVec2) {
-        self.element_mut().get_and_set_size(size);
-        self.element_mut().set_position(pos_offset);
+    pub fn layout_in_size(
+        &mut self,
+        size: DVec2,
+        pos_offset: DVec2,
+        visitor: &mut impl ComputedBoundsVisitor,
+    ) {
+        self.get_and_set_size(size);
+        self.set_position(pos_offset, visitor);
     }
 
-    pub fn layout_centered_to_own_size(&mut self) {
-        let own_size = self.element_mut().get_and_set_size(DVec2::MAX);
-        self.element_mut().set_position(-own_size * dvec2(0.5, 0.5));
+    pub fn layout_centered_to_own_size(&mut self, visitor: &mut impl ComputedBoundsVisitor) {
+        let own_size = self.get_and_set_size(DVec2::MAX);
+        self.set_position(-own_size * dvec2(0.5, 0.5), visitor);
     }
 
-    pub fn layout_relative_to_own_size(&mut self, unit_pos: DVec2, pos_offset: DVec2) {
-        let own_size = self.element_mut().get_and_set_size(DVec2::MAX);
-        self.element_mut()
-            .set_position(-own_size * unit_pos + pos_offset);
+    pub fn layout_relative_to_own_size(
+        &mut self,
+        unit_pos: DVec2,
+        pos_offset: DVec2,
+        visitor: &mut impl ComputedBoundsVisitor,
+    ) {
+        let own_size = self.get_and_set_size(DVec2::MAX);
+        self.set_position(-own_size * unit_pos + pos_offset, visitor);
     }
 }
 
-impl ElementWithComputed {
+impl StoredElement {
     pub fn get_and_set_size(&mut self, max_size: DVec2) -> DVec2 {
-        match self {
+        match &mut self.element {
             ElementWithComputed::Div((div, computed)) => div.get_and_set_size(max_size, computed),
             ElementWithComputed::Text((text, computed)) => {
                 text.get_and_set_size(max_size, computed)
@@ -50,10 +62,16 @@ impl ElementWithComputed {
     }
 
     /// assumes all sizes have been calculated
-    fn set_position(&mut self, pos: DVec2) {
-        match self {
-            ElementWithComputed::Div((div, computed)) => div.set_position(pos, computed),
-            ElementWithComputed::Text((text, computed)) => text.set_position(pos, computed),
+    fn set_position(&mut self, pos: DVec2, visitor: &mut impl ComputedBoundsVisitor) {
+        match &mut self.element {
+            ElementWithComputed::Div((div, computed)) => {
+                div.set_position(pos, computed, visitor);
+                visitor.visit(self.id, &computed.bounds);
+            }
+            ElementWithComputed::Text((text, computed)) => {
+                text.set_position(pos, computed, visitor);
+                visitor.visit(self.id, &computed.bounds);
+            }
         }
     }
 }
@@ -109,10 +127,9 @@ impl Div {
         match self.axis {
             Axis::X => {
                 for child in self.children.iter_mut() {
-                    let child = child.element_mut();
                     let child_size = child.get_and_set_size(max_size);
                     // children with absolute positioning should not contribute to the size of the parent.
-                    if !is_absolute(child) {
+                    if !is_absolute(&child.element) {
                         all_children_size.x += child_size.x;
                         all_children_size.y = all_children_size.y.max(child_size.y);
                     }
@@ -120,11 +137,10 @@ impl Div {
             }
             Axis::Y => {
                 for child in self.children.iter_mut() {
-                    let child = child.element_mut();
                     let child_size = child.get_and_set_size(max_size);
                     // children with absolute positioning should not contribute to the size of the parent.
 
-                    if !is_absolute(child) {
+                    if !is_absolute(&child.element) {
                         all_children_size.x = all_children_size.x.max(child_size.x);
                         all_children_size.y += child_size.y;
                     }
@@ -134,19 +150,27 @@ impl Div {
         all_children_size
     }
 
-    fn set_position(&mut self, pos: DVec2, computed: &mut DivComputed) {
+    fn set_position(
+        &mut self,
+        pos: DVec2,
+        computed: &mut DivComputed,
+        visitor: &mut impl ComputedBoundsVisitor,
+    ) {
         // set own position:
         computed.bounds.pos = pos + self.offset;
-
         // set childrens positions:
-        self.set_child_positions(computed)
+        self.set_child_positions(computed, visitor)
     }
 
     #[inline]
-    fn set_child_positions(&mut self, own_computed: &mut DivComputed) {
+    fn set_child_positions(
+        &mut self,
+        own_computed: &mut DivComputed,
+        visitor: &mut impl ComputedBoundsVisitor,
+    ) {
         match self.axis {
-            Axis::X => _monomorphized_set_child_positions::<XMain>(self, own_computed),
-            Axis::Y => _monomorphized_set_child_positions::<YMain>(self, own_computed),
+            Axis::X => _monomorphized_set_child_positions::<XMain>(self, own_computed, visitor),
+            Axis::Y => _monomorphized_set_child_positions::<YMain>(self, own_computed, visitor),
         }
 
         pub trait AssembleDisassemble {
@@ -187,6 +211,7 @@ impl Div {
         fn _monomorphized_set_child_positions<A: AssembleDisassemble>(
             div: &mut Div,
             computed: &DivComputed,
+            visitor: &mut impl ComputedBoundsVisitor,
         ) {
             let n_children = div.children.len();
             if n_children == 0 {
@@ -227,15 +252,14 @@ impl Div {
             };
 
             for ch in div.children.iter_mut() {
-                let ch = ch.element_mut();
-                let ch_size = ch.computed_bounds_mut().size; // computed in previous step
+                let ch_size = ch.element.computed_bounds_mut().size; // computed in previous step
 
                 let (ch_main_size, ch_cross_size) = A::disassemble(ch_size);
                 let cross = calc_cross_offset(cross_size, ch_cross_size);
 
                 let ch_rel_pos: DVec2;
 
-                if let Some(unit_pos) = absolute_unit_pos(ch) {
+                if let Some(unit_pos) = absolute_unit_pos(&ch.element) {
                     // absolute positioning still considers padding of parent (inner size);
                     let inner_offset = (inner_size - ch_size) * unit_pos.as_dvec2();
                     ch_rel_pos = inner_offset;
@@ -244,7 +268,7 @@ impl Div {
                     main_offset += ch_main_size + main_step;
                 }
 
-                ch.set_position(ch_rel_pos + inner_pos);
+                ch.set_position(ch_rel_pos + inner_pos, visitor);
             }
         }
 
@@ -318,15 +342,20 @@ impl Text {
         computed.bounds.size
     }
 
-    fn set_position(&mut self, pos: DVec2, computed: &mut TextComputed) {
+    fn set_position(
+        &mut self,
+        pos: DVec2,
+        computed: &mut TextComputed,
+        visitor: &mut impl ComputedBoundsVisitor,
+    ) {
         // set own position:
         computed.bounds.pos = pos + self.offset;
 
         // set positions of inline elements in the text:
         for element in self.element_sections_mut() {
             // computed during text layout:
-            let relative_pos_in_text = element.computed_bounds_mut().pos;
-            element.set_position(computed.bounds.pos + relative_pos_in_text)
+            let relative_pos_in_text = element.element.computed_bounds_mut().pos;
+            element.set_position(computed.bounds.pos + relative_pos_in_text, visitor)
         }
 
         for g in computed.glyphs.iter_mut() {
@@ -536,7 +565,6 @@ impl TextLayout {
 
     fn layout_element_section(&mut self, element: &mut ElementBox, sets_line_height: bool) {
         // currently only y-bounded in-text elements supported. Do not use an element with unbounded size as part of some text section.
-        let element = element.element_mut();
         let element_size = element.get_and_set_size(dvec2(self.max_width as f64, f64::MAX));
         // add line break if the element does not fit into this line anymore:
         let line_break = self.current_line.advance + element_size.x as f32 > self.max_width;
@@ -545,7 +573,7 @@ impl TextLayout {
         }
 
         // assign the x part of the element relative position already, the relative y is assined later, when we know the fine heights of each line.
-        element.computed_bounds_mut().pos.x = self.current_line.advance as f64;
+        element.element.computed_bounds_mut().pos.x = self.current_line.advance as f64;
 
         self.current_line.advance += element_size.x as f32;
         let line_index = self.lines.len();
@@ -603,7 +631,7 @@ impl TextLayout {
         for (i, element) in text.element_sections_mut().enumerate() {
             let line = &lines[element_line_indices[i]];
             let bottom_y = line.baseline_y - line.max_metrics.descent; // this is > baseline_y (so more down), because descent negative.
-            let computed = element.computed_bounds_mut();
+            let computed = element.element.computed_bounds_mut();
             computed.pos.y = bottom_y as f64 - computed.size.y;
         }
 
@@ -621,4 +649,12 @@ impl TextLayout {
             text_section_glyphs,
         }
     }
+}
+
+pub trait ComputedBoundsVisitor {
+    fn visit(&mut self, id: ElementId, computed_bounds: &ComputedBounds);
+}
+impl ComputedBoundsVisitor for () {
+    #[inline]
+    fn visit(&mut self, _id: ElementId, _computed_bounds: &ComputedBounds) {}
 }

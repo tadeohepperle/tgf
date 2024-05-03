@@ -188,6 +188,19 @@ impl DefaultParams for Range<f32> {
     }
 }
 
+impl EditableValue for f64 {
+    type Params = Range<f64>;
+
+    fn edit(&mut self, params: &Self::Params, ui: &mut egui::Ui) {
+        ui.add(Slider::new(self, params.start..=params.end));
+    }
+}
+impl DefaultParams for Range<f64> {
+    fn default_params() -> Self {
+        0.0..1.0
+    }
+}
+
 impl EditableValue for i32 {
     type Params = Range<i32>;
 

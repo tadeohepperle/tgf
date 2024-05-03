@@ -42,8 +42,11 @@ impl App {
     fn new(window: Arc<Window>) -> Self {
         let world = DefaultWorld::new(window);
         let some_cubes = random_cubes();
-        let font =
-            SdfFont::from_bytes(include_bytes!("../assets/MarkoOne-Regular.ttf"), &world.ctx);
+        let font = SdfFont::from_bytes(
+            include_bytes!("../assets/MarkoOne-Regular.ttf"),
+            &world.ctx.device,
+            &world.ctx.queue,
+        );
         Self {
             world,
             some_cubes,

@@ -120,6 +120,13 @@ impl Aabb {
         Self { min, max }
     }
 
+    pub fn quad(center: Vec2, size: Vec2) -> Self {
+        Self {
+            min: center - size / 2.0,
+            max: center + size / 2.0,
+        }
+    }
+
     pub const fn flipped_x(self) -> Self {
         Aabb {
             min: vec2(self.max.x, self.min.y),
@@ -162,15 +169,15 @@ impl Aabb {
         self
     }
 
-    pub fn scale_xy(mut self, factor: Vec2) -> Self {
-        let center = (self.min + self.max) * 0.5;
-        self.min = center + (self.min - center) * factor;
-        self.max = center + (self.max - center) * factor;
-        self
-    }
-
+    #[inline(always)]
     pub fn contains(&self, pos: Vec2) -> bool {
         pos.x >= self.min.x && pos.y >= self.min.y && pos.x <= self.max.x && pos.y <= self.max.y
+    }
+
+    #[inline(always)]
+    pub fn intersects(&self, other: &Aabb) -> bool {
+        self.max.x.min(other.max.x) >= self.min.x.max(other.min.x)
+            && self.max.y.min(other.max.y) >= self.min.y.max(other.min.y)
     }
 
     pub const UNIT: Aabb = Aabb {

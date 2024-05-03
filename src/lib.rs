@@ -76,6 +76,7 @@ pub use winit::{dpi::PhysicalSize, event::WindowEvent, keyboard::KeyCode, window
 pub use yolo::{YoloCell, YoloRc};
 
 pub mod ext {
+    pub use ahash;
     pub use anyhow;
     pub use bytemuck;
     pub use glam;

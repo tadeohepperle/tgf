@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     edit,
     renderer::ui_screen::UiScreenRenderer,
-    ui::{batching::ElementBatchesGR, Board, REFERENCE_SCREEN_SIZE_D},
+    ui::{batching::ElementBatchesGR, div, Board, ElementContext, REFERENCE_SCREEN_SIZE_D},
     uniforms::Uniforms,
     AppT, Bloom, Camera3d, Color, ColorMeshRenderer, Egui, Gizmos, GraphicsContext, Input,
     RenderFormat, Runner, RunnerCallbacks, Screen, ScreenTextures, ShaderCache, Time, ToneMapping,
@@ -100,7 +100,7 @@ impl DefaultWorld {
         let gizmos = Gizmos::new(&ctx, RenderFormat::HDR_MSAA4, &mut shader_cache);
 
         let ui_renderer = UiScreenRenderer::new(&ctx.device, &mut shader_cache);
-        let ui = Board::new(&mut (), REFERENCE_SCREEN_SIZE_D);
+        let ui = Board::new(div().store(), REFERENCE_SCREEN_SIZE_D);
         let ui_gr = ElementBatchesGR::new(&ui.batches, &ctx.device);
 
         Self {
@@ -138,7 +138,12 @@ impl DefaultWorld {
             ],
             &self.ctx.device,
         );
-        self.ui.ctx.set_input(&self.input);
+        self.ui.ctx.start_frame_scaled_to_fixed_height(
+            self.input.cursor_pos().as_dvec2(),
+            self.input.mouse_buttons(),
+            PhysicalSize::new(self.screen.width, self.screen.height),
+            REFERENCE_SCREEN_SIZE_D.y,
+        );
     }
 
     pub fn end_frame(&mut self) {

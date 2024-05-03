@@ -5,87 +5,20 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::ui::{
-    allocator::{SlabAllocator, SlabPtr},
-    element::{ComputedBounds, Div, DivComputed, Element, Text, TextComputed},
+use crate::{
+    ui::{
+        allocator::{SlabAllocator, SlabPtr},
+        element::{ComputedBounds, Div, DivComputed, Element, Text, TextComputed},
+    },
+    YoloCell,
 };
 
 use super::element_id::ElementId;
-use ahash::AHashMap;
-use glam::{DVec2};
+use glam::DVec2;
 
+const STORED_ELEMENTS_CAPACITY: usize = 4096;
 thread_local! {
-    static STORED_ELEMENTS : ElementStore =  ElementStore::new();
-}
-
-/// Not threadsafe but that is okay!
-pub struct ElementStore {
-    slab_alloc: UnsafeCell<SlabAllocator<StoredElement>>,
-    id_hash_map: UnsafeCell<AHashMap<ElementId, SlabPtr<StoredElement>>>,
-}
-
-impl Default for ElementStore {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ElementStore {
-    pub fn new() -> Self {
-        const STORED_ELEMENTS_CAPACITY: usize = 4096;
-        ElementStore {
-            slab_alloc: UnsafeCell::new(SlabAllocator::new(STORED_ELEMENTS_CAPACITY)),
-            id_hash_map: UnsafeCell::new(Default::default()),
-        }
-    }
-
-    #[inline(always)]
-    fn slab_alloc(&self) -> &mut SlabAllocator<StoredElement> {
-        unsafe { &mut *self.slab_alloc.get() }
-    }
-
-    #[inline(always)]
-    pub fn id_hash_map(&self) -> &mut AHashMap<ElementId, SlabPtr<StoredElement>> {
-        unsafe { &mut *self.id_hash_map.get() }
-    }
-
-    pub fn get_computed_bounds(id: &ElementId) -> Option<ComputedBounds> {
-        STORED_ELEMENTS.with(|e| {
-            let hash_map = e.id_hash_map();
-            let slab_ptr = hash_map.get(id)?;
-            let element = unsafe { &*slab_ptr.as_ptr() };
-            let bounds = match &element.element {
-                ElementWithComputed::Div((_, c)) => c.bounds,
-                ElementWithComputed::Text((_, c)) => c.bounds,
-            };
-            Some(bounds)
-        })
-    }
-
-    pub fn get_all_element_ids() -> Vec<ElementId> {
-        STORED_ELEMENTS.with(|e| {
-            let hash_map = e.id_hash_map();
-            hash_map.keys().copied().collect()
-        })
-    }
-
-    #[inline(always)]
-    pub fn any_element_with_id_hovered(cursor_pos: DVec2) -> bool {
-        STORED_ELEMENTS.with(|e| {
-            let hash_map = e.id_hash_map();
-            for slab_ptr in hash_map.values() {
-                let element = unsafe { &*slab_ptr.as_ptr() };
-                let bounds = match &element.element {
-                    ElementWithComputed::Div((_, c)) => &c.bounds,
-                    ElementWithComputed::Text((_, c)) => &c.bounds,
-                };
-                if bounds.contains(&cursor_pos) {
-                    return true;
-                }
-            }
-            false
-        })
-    }
+    static STORED_ELEMENTS : YoloCell<SlabAllocator<StoredElement>> = YoloCell::new(SlabAllocator::new(STORED_ELEMENTS_CAPACITY));
 }
 
 pub struct ElementBox {
@@ -97,19 +30,6 @@ pub trait IntoElementBox {
 
     fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox;
 }
-
-// impl IntoElementBox for ElementBox {
-//     fn store(self) -> ElementBox {
-//         self._deref_mut().id = ElementId::NONE;
-//         self
-//     }
-
-//     fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox {
-//         let id: ElementId = id.into();
-//         self._deref_mut().id = id;
-//         todo!()
-//     }
-// }
 
 impl<T: Into<Element>> IntoElementBox for T {
     fn store(self) -> ElementBox {
@@ -139,40 +59,15 @@ impl Debug for ElementBox {
 
 impl ElementBox {
     pub fn new(element: StoredElement) -> Self {
-        let id = element.id;
-
         // allocate the element in the thred local slab allocator
-        let ptr = STORED_ELEMENTS.with(|e| unsafe { e.slab_alloc().alloc(element) });
-
-        // remember where the element is if some explicit id is set.
-        if !id.is_none() {
-            let copied_ptr = unsafe { ptr.copy() };
-            STORED_ELEMENTS.with(|e| e.id_hash_map().insert(id, copied_ptr));
-        }
-
-        // println!("new {:?}", ptr.as_ptr());
-
+        let ptr = STORED_ELEMENTS.with(|e| unsafe { e.get_mut().alloc(element) });
         ElementBox { ptr }
     }
 }
 
 impl Drop for ElementBox {
     fn drop(&mut self) {
-        // println!("drop element {:?}", self.ptr.as_ptr());
-        // println!("dealloc {self:?}");
-        if !self.id().is_none() {
-            STORED_ELEMENTS.with(|e| {
-                let hm = e.id_hash_map();
-                // remove the entry from the hashmap only for this id, if it is still pointing to the same memory
-                // (could already be pointing to memory of the next iteration of elements...);
-                if let Entry::Occupied(entry) = hm.entry(self.id()) {
-                    if entry.get().as_ptr() == self.ptr.as_ptr() {
-                        entry.remove();
-                    }
-                }
-            })
-        }
-        STORED_ELEMENTS.with(|e| unsafe { e.slab_alloc().dealloc(&self.ptr) });
+        STORED_ELEMENTS.with(|e| unsafe { e.get_mut().dealloc(&self.ptr) });
     }
 }
 
@@ -181,6 +76,12 @@ impl Deref for ElementBox {
 
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.ptr.as_ptr() }
+    }
+}
+
+impl DerefMut for ElementBox {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.ptr.as_ptr() }
     }
 }
 
@@ -195,15 +96,15 @@ impl ElementBox {
         self.id
     }
 
-    #[inline(always)]
-    pub fn element(&self) -> &ElementWithComputed {
-        &self.element
-    }
+    // #[inline(always)]
+    // pub fn element(&self) -> &ElementWithComputed {
+    //     &self.element
+    // }
 
-    #[inline(always)]
-    pub fn element_mut(&mut self) -> &mut ElementWithComputed {
-        &mut self._deref_mut().element
-    }
+    // #[inline(always)]
+    // pub fn element_mut(&mut self) -> &mut ElementWithComputed {
+    //     &mut self._deref_mut().element
+    // }
 }
 
 #[derive(Debug)]

@@ -1,5 +1,6 @@
 use std::{
     hash::{Hash, Hasher},
+    num::NonZeroU64,
     ops::Add,
 };
 
@@ -8,30 +9,30 @@ use ahash::AHasher;
 /// Inner value should be a hash, not something directly chosen.
 ///
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ElementId(u64);
+pub struct ElementId(NonZeroU64);
 
 impl ElementId {
-    pub const fn is_none(&self) -> bool {
-        self.0 == u64::MAX
+    pub fn is_none(&self) -> bool {
+        *self == ElementId::NONE
     }
 
-    pub(crate) const NONE: ElementId = ElementId(u64::MAX);
+    pub(crate) const NONE: ElementId = ElementId(unsafe { NonZeroU64::new_unchecked(u64::MAX) });
 }
 
 impl Hash for ElementId {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // because the inner value is already considered to be hashed.
-        state.write_u64(self.0)
+        state.write_u64(self.0.into())
     }
 }
 
 impl ElementId {
     #[inline]
-    pub fn child<T: Hash>(&self, child_id: T) -> ElementId {
+    pub fn combine<T: Hash>(&self, child_id: T) -> ElementId {
         let mut hasher = AHasher::default();
         self.0.hash(&mut hasher);
         child_id.hash(&mut hasher);
-        ElementId(hasher.finish())
+        ElementId(unsafe { NonZeroU64::new_unchecked(hasher.finish()) })
     }
 }
 
@@ -42,7 +43,7 @@ where
     type Output = ElementId;
 
     fn add(self, rhs: T) -> Self::Output {
-        self.child(rhs)
+        self.combine(rhs)
     }
 }
 
@@ -52,7 +53,7 @@ macro_rules! into_element_id {
             fn from(value: $($tt)*) -> Self {
                 let mut hasher = AHasher::default();
                 value.hash(&mut hasher);
-                ElementId(hasher.finish())
+                ElementId(unsafe { NonZeroU64::new_unchecked(hasher.finish()) })
             }
         }
     };

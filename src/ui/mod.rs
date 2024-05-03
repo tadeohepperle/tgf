@@ -13,7 +13,7 @@ pub use element::{
 };
 pub use element_context::{Board, ElementContext, IntoElement};
 pub use element_id::ElementId;
-pub use element_store::{ElementBox, ElementStore, ElementWithComputed, IntoElementBox};
+pub use element_store::{ElementBox, ElementWithComputed, IntoElementBox};
 pub use font::SdfFont;
 
 pub use fontdue::{Font, FontSettings};

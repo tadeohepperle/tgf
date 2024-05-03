@@ -1,4 +1,5 @@
-use std::sync::Arc;
+use std::ops::Deref;
+use std::{ops::DerefMut, sync::Arc};
 
 use std::rc::Rc;
 
@@ -13,6 +14,8 @@ use crate::ui::{
     layout::GlyphBoundsAndUv,
     SdfFont,
 };
+
+use super::element_store::StoredElement;
 
 #[repr(C)]
 pub enum Element {
@@ -396,16 +399,16 @@ impl Default for Text {
 }
 
 impl Text {
-    pub fn element_sections_mut(&mut self) -> impl Iterator<Item = &mut ElementWithComputed> {
+    pub fn element_sections_mut(&mut self) -> impl Iterator<Item = &mut StoredElement> {
         self.sections.iter_mut().filter_map(|s| match s {
-            Section::Element { element, .. } => Some(element.element_mut()),
+            Section::Element { element, .. } => Some(element.deref_mut()),
             Section::Text(_) => None,
         })
     }
 
-    pub fn element_sections(&self) -> impl Iterator<Item = &ElementWithComputed> {
+    pub fn element_sections(&self) -> impl Iterator<Item = &StoredElement> {
         self.sections.iter().filter_map(|s| match s {
-            Section::Element { element, .. } => Some(element.element()),
+            Section::Element { element, .. } => Some(element.deref()),
             Section::Text(_) => None,
         })
     }

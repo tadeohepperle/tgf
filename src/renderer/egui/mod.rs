@@ -6,7 +6,6 @@ use winit::{event::WindowEvent, window::Window};
 
 use self::platform::{Platform, PlatformDescriptor};
 
-
 pub mod platform;
 
 /// ## How to use the functions exposed by EguiState:
@@ -86,7 +85,7 @@ impl Egui {
             timestamp_writes: None,
         });
 
-        let screen_descriptor = self.platform.screen_descriptor();
+        let mut screen_descriptor = self.platform.screen_descriptor();
         self.renderer
             .render(&mut render_pass, &self.paint_jobs, &screen_descriptor);
     }

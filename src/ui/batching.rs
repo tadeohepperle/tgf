@@ -1,8 +1,7 @@
 use std::rc::Rc;
 
 use crate::{
-    renderer::sdf_sprite::AlphaSdfParams, Aabb, BindableTexture, Color,
-    GrowableBuffer, VertexT,
+    renderer::sdf_sprite::AlphaSdfParams, Aabb, BindableTexture, Color, GrowableBuffer, VertexT,
 };
 use wgpu::BufferUsages;
 
@@ -256,7 +255,7 @@ impl ElementWithComputed {
                 }
 
                 for ch in div.0.children.iter() {
-                    ch.element().collect_prim_elements(level, prim_elements);
+                    ch.element.collect_prim_elements(level, prim_elements);
                 }
             }
             ElementWithComputed::Text(text) => {
@@ -273,9 +272,7 @@ impl ElementWithComputed {
                             prim_elements.push((level, prim));
                         }
                         Section::Element { element, .. } => {
-                            element
-                                .element()
-                                .collect_prim_elements(level, prim_elements);
+                            element.element.collect_prim_elements(level, prim_elements);
                         }
                     }
                 }
