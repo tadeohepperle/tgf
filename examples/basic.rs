@@ -5,7 +5,7 @@ use rand::{thread_rng, Rng};
 use tgf::{
     edit,
     renderer::screen_textures,
-    ui::{div, Align, SdfFont, TextSection},
+    ui::{div, Align, IntoElementBox, SdfFont, TextSection},
     utils::camera_controllers::FlyCamController,
     AppT, Bloom, Camera3d, Camera3dGR, Color, ColorMeshRenderer, DefaultWorld, Egui, Gizmos,
     GraphicsContext, Input, KeyCode, Lerp, RenderFormat, Runner, Screen, ScreenGR, ScreenTextures,

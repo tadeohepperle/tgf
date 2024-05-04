@@ -282,10 +282,14 @@ impl Div {
         fn main_offset_and_step(
             main_align: MainAlign,
             main_size: f64,
-            main_content_size: f64,
+            mut main_content_size: f64,
             n_children: usize,
             gap: f64,
         ) -> (f64, f64) {
+            if n_children > 1 {
+                main_content_size = main_content_size + (n_children - 1) as f64 * gap;
+            }
+
             let offset: f64; // initial offset on main axis for the first child
             let step: f64; //  step that gets added for each child on main axis after its own size on main axis.
             match main_align {
@@ -294,7 +298,7 @@ impl Div {
                     step = gap;
                 }
                 MainAlign::Center => {
-                    offset = (main_size - main_content_size) * 0.5;
+                    offset = (main_size - main_content_size) * 0.5; // there is a bug in here with gaps, prob. -gap * n_children -1 would be right.
                     step = gap;
                 }
                 MainAlign::End => {

@@ -1,3 +1,5 @@
+var<push_constant> push_color: vec4<f32>;
+
 const UI_REFERENCE_Y_HEIGHT: f32 = 1080.0;
 
 @group(1) @binding(0)
@@ -103,11 +105,11 @@ fn rect_vs(
     out.offset = vertex.pos - center;
     out.size = instance.aabb.zw - instance.aabb.xy;
 
-    out.color = instance.color;
+    out.color = instance.color * push_color;
     out.border_radius = instance.border_radius;
-    out.border_color = instance.border_color;
+    out.border_color = instance.border_color * push_color;
     out.others = instance.others;
-    out.shadow_color = instance.shadow_color;
+    out.shadow_color = instance.shadow_color * push_color;
     return out;
 }
  
@@ -148,11 +150,11 @@ fn textured_rect_vs(
     out.offset = vertex.pos - center;
     out.size = instance.aabb.zw - instance.aabb.xy;
 
-    out.color = instance.color;
+    out.color = instance.color * push_color;
     out.border_radius = instance.border_radius;
-    out.border_color = instance.border_color;
+    out.border_color = instance.border_color * push_color;
     out.others = instance.others;
-    out.shadow_color = instance.shadow_color;
+    out.shadow_color = instance.shadow_color * push_color;
     out.uv = vertex.uv;
     return out;
 }
@@ -178,8 +180,8 @@ fn alpha_sdf_rect_vs(
     var out: AlphaSdfVertexOutput;
     out.clip_position = vec4<f32>(device_pos, 0.0, 1.0);
 
-    out.color = instance.color;
-    out.border_color = instance.border_color;
+    out.color = instance.color * push_color;
+    out.border_color = instance.border_color * push_color;
     out.params = instance.params;
     out.uv = vertex.uv;
     return out;
@@ -200,9 +202,9 @@ fn glyph_vs(
 
     var out: GlyphVertexOutput;
     out.clip_position = vec4<f32>(device_pos, 0.0, 1.0);
-    out.color = instance.color;
+    out.color = instance.color * push_color;
     out.uv = vertex.uv; 
-    out.shadow_intensity = instance.shadow_intensity;
+    out.shadow_intensity = instance.shadow_intensity * push_color.a;
     return out;
 }
 

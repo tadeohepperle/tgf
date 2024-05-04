@@ -1,10 +1,9 @@
-
 use crate::{
-    make_shader_source, rgba_bind_group_layout_cached, uniforms::Uniforms,
-    HotReload, ShaderCache, ShaderSource, VertexT, VertsLayout,
+    make_shader_source, rgba_bind_group_layout_cached, uniforms::Uniforms, Color, HotReload,
+    ShaderCache, ShaderSource, VertexT, VertsLayout,
 };
 
-use wgpu::{RenderPipelineDescriptor, TextureView, VertexState};
+use wgpu::{PushConstantRange, RenderPipelineDescriptor, ShaderStages, TextureView, VertexState};
 
 use crate::ui::batching::{
     AlphaSdfRectRaw, Batch, BatchKind, ElementBatchesGR, GlyphRaw, RectRaw, TexturedRectRaw,
@@ -44,9 +43,10 @@ impl UiScreenRenderer {
         buffers: &'a ElementBatchesGR,
         batches: &'a Vec<Batch>,
         uniforms: &'a Uniforms,
+        color: Color,
     ) {
         let mut pass = self.new_render_pass(encoder, view);
-        self.render_batches(&mut pass, buffers, batches, uniforms);
+        self.render_batches(&mut pass, buffers, batches, uniforms, color);
     }
 
     pub fn new_render_pass<'a>(
@@ -77,6 +77,7 @@ impl UiScreenRenderer {
         buffers: &'a ElementBatchesGR,
         batches: &'a Vec<Batch>,
         uniforms: &'a Uniforms,
+        color: Color,
     ) {
         if batches.is_empty() {
             return;
@@ -92,6 +93,11 @@ impl UiScreenRenderer {
             match &batch.kind {
                 BatchKind::Rect => {
                     pass.set_pipeline(&self.rect_pipeline);
+                    pass.set_push_constants(
+                        ShaderStages::VERTEX,
+                        0,
+                        bytemuck::cast_slice(&[color]),
+                    );
                     // set the instance buffer (no vertex buffer used, vertex positions computed from instances)
                     pass.set_vertex_buffer(0, buffers.rects.buffer().slice(..));
                     // todo!() maybe not set entire buffer and then adjust the instance indexes that are drawn???
@@ -100,18 +106,33 @@ impl UiScreenRenderer {
                 BatchKind::TexturedRect(texture) => {
                     pass.set_bind_group(1, &texture.bind_group, &[]);
                     pass.set_pipeline(&self.textured_rect_pipeline);
+                    pass.set_push_constants(
+                        ShaderStages::VERTEX,
+                        0,
+                        bytemuck::cast_slice(&[color]),
+                    );
                     pass.set_vertex_buffer(0, buffers.textured_rects.buffer().slice(..));
                     pass.draw(0..VERTEX_COUNT, range);
                 }
                 BatchKind::AlphaSdfRect(texture) => {
                     pass.set_bind_group(1, &texture.bind_group, &[]);
                     pass.set_pipeline(&self.alpha_sdf_rect_pipeline);
+                    pass.set_push_constants(
+                        ShaderStages::VERTEX,
+                        0,
+                        bytemuck::cast_slice(&[color]),
+                    );
                     pass.set_vertex_buffer(0, buffers.alpha_sdf_rects.buffer().slice(..));
                     pass.draw(0..VERTEX_COUNT, range);
                 }
                 BatchKind::Glyph(text) => {
                     pass.set_bind_group(1, &text.atlas_texture().bind_group, &[]);
                     pass.set_pipeline(&self.glyph_pipeline);
+                    pass.set_push_constants(
+                        ShaderStages::VERTEX,
+                        0,
+                        bytemuck::cast_slice(&[color]),
+                    );
                     pass.set_vertex_buffer(0, buffers.glyphs.buffer().slice(..));
                     pass.draw(0..VERTEX_COUNT, range);
                 }
@@ -203,7 +224,10 @@ pub fn create_pipeline<Instance: VertexT>(
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(std::any::type_name::<Instance>()),
         bind_group_layouts,
-        push_constant_ranges: &[],
+        push_constant_ranges: &[wgpu::PushConstantRange {
+            stages: ShaderStages::VERTEX,
+            range: 0..std::mem::size_of::<Color>() as u32,
+        }],
     });
 
     let verts_layout = VertsLayout::new().instance::<Instance>();

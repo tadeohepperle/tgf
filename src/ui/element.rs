@@ -23,6 +23,22 @@ pub enum Element {
     Text(Text),
 }
 
+impl IntoElementBox for Element {
+    fn store(self) -> ElementBox {
+        ElementBox::new(StoredElement {
+            element: ElementWithComputed::from_element(self),
+            id: ElementId::NONE,
+        })
+    }
+
+    fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox {
+        ElementBox::new(StoredElement {
+            element: ElementWithComputed::from_element(self),
+            id: id.into(),
+        })
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Div {
     style: DivStyle,
@@ -74,18 +90,19 @@ pub fn red_box() -> Element {
     }))
 }
 
-impl Div {
-    /// Allocates the div in the threadlocal slab allocator.
-    pub fn store(self) -> ElementBox {
+impl IntoElementBox for Div {
+    fn store(self) -> ElementBox {
         Element::Div(self).store()
     }
 
+    fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox {
+        Element::Div(self).store_with_id(id)
+    }
+}
+
+impl Div {
     pub fn element(self) -> Element {
         Element::Div(self)
-    }
-
-    pub fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox {
-        Element::Div(self).store_with_id(id)
     }
 
     pub fn style(mut self, f: impl FnOnce(&mut DivStyle)) -> Self {
@@ -106,6 +123,11 @@ impl Div {
     pub fn child_box(mut self, child: ElementBox) -> Self {
         self.children.push(child);
         self
+    }
+
+    #[inline]
+    pub fn push(&mut self, e: impl IntoElementBox) {
+        self.children.push(e.store());
     }
 
     /// full transparent and absolute. good for overlays
@@ -388,6 +410,16 @@ pub struct Text {
     pub additional_line_gap: f32,
 }
 
+impl IntoElementBox for Text {
+    fn store(self) -> ElementBox {
+        Element::from(self).store()
+    }
+
+    fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox {
+        Element::from(self).store_with_id(id)
+    }
+}
+
 impl Default for Text {
     fn default() -> Self {
         Self {
@@ -508,6 +540,16 @@ pub struct TextSection {
     pub color: Color,
     pub font_size: f32,
     pub shadow_intensity: f32,
+}
+
+impl IntoElementBox for TextSection {
+    fn store(self) -> ElementBox {
+        Element::from(self).store()
+    }
+
+    fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox {
+        Element::from(self).store_with_id(id)
+    }
 }
 
 pub enum ElementSection {}

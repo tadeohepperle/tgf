@@ -31,22 +31,6 @@ pub trait IntoElementBox {
     fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox;
 }
 
-impl<T: Into<Element>> IntoElementBox for T {
-    fn store(self) -> ElementBox {
-        ElementBox::new(StoredElement {
-            element: ElementWithComputed::from_element(self.into()),
-            id: ElementId::NONE,
-        })
-    }
-
-    fn store_with_id(self, id: impl Into<ElementId>) -> ElementBox {
-        ElementBox::new(StoredElement {
-            element: ElementWithComputed::from_element(self.into()),
-            id: id.into(),
-        })
-    }
-}
-
 impl Debug for ElementBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let stored_element: &StoredElement = self.deref();

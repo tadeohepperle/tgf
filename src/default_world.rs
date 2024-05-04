@@ -3,7 +3,10 @@ use std::sync::Arc;
 use crate::{
     edit,
     renderer::ui_screen::UiScreenRenderer,
-    ui::{batching::ElementBatchesGR, div, Board, ElementContext, REFERENCE_SCREEN_SIZE_D},
+    ui::{
+        batching::ElementBatchesGR, div, Board, ElementContext, IntoElementBox,
+        REFERENCE_SCREEN_SIZE_D,
+    },
     uniforms::Uniforms,
     AppT, Bloom, Camera3d, Color, ColorMeshRenderer, Egui, Gizmos, GraphicsContext, Input,
     RenderFormat, Runner, RunnerCallbacks, Screen, ScreenTextures, ShaderCache, Time, ToneMapping,
@@ -210,6 +213,7 @@ impl DefaultWorld {
             &self.ui_gr,
             &self.ui.batches.batches,
             &self.uniforms,
+            Color::WHITE,
         );
         self.egui.render(&mut encoder, &view);
 
