@@ -102,7 +102,8 @@ impl DefaultWorld {
         let color_renderer = ColorMeshRenderer::new(&ctx, Default::default(), &mut shader_cache);
         let gizmos = Gizmos::new(&ctx, RenderFormat::HDR_MSAA4, &mut shader_cache);
 
-        let ui_renderer = UiScreenRenderer::new(&ctx.device, &mut shader_cache);
+        let ui_renderer =
+            UiScreenRenderer::new(&ctx.device, &mut shader_cache, RenderFormat::LDR_NO_MSAA);
         let ui = Board::new(div().store(), REFERENCE_SCREEN_SIZE_D);
         let ui_gr = ElementBatchesGR::new(&ui.batches, &ctx.device);
 

@@ -198,7 +198,7 @@ impl Texture {
         texture
     }
 
-    fn create_2d_texture(
+    pub fn create_2d_texture(
         device: &wgpu::Device,
         width: u32,
         height: u32,

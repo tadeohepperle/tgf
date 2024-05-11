@@ -369,7 +369,10 @@ impl Text {
     }
 }
 
-pub fn layout_text(text: &mut Text, max_width: f32) -> TextComputed {
+pub fn layout_text(text: &mut Text, mut max_width: f32) -> TextComputed {
+    if max_width <= 0.0 {
+        max_width = f32::MAX;
+    }
     let mut text_layout = TextLayout {
         max_width,
         glyphs: vec![],

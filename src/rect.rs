@@ -134,6 +134,30 @@ impl Aabb {
         }
     }
 
+    pub fn bounding_aabb_for_points(points: &[Vec2]) -> Aabb {
+        if points.is_empty() {
+            return Aabb::ZERO;
+        }
+
+        let mut min = Vec2::MAX;
+        let mut max = Vec2::MIN;
+        for p in points {
+            if p.x > max.x {
+                max.x = p.x;
+            }
+            if p.x < min.x {
+                min.x = p.x;
+            }
+            if p.y > max.y {
+                max.y = p.y;
+            }
+            if p.y < min.y {
+                min.y = p.y;
+            }
+        }
+        Aabb { min, max }
+    }
+
     /// this is the default, assuming that a sprite is looking to the right, if the aabb has max_x > min_x
     pub fn looking_to_right(self) -> Self {
         if self.max.x < self.min.x {
@@ -183,6 +207,11 @@ impl Aabb {
     pub const UNIT: Aabb = Aabb {
         min: Vec2::ZERO,
         max: Vec2::ONE,
+    };
+
+    pub const ZERO: Aabb = Aabb {
+        min: Vec2::ZERO,
+        max: Vec2::ZERO,
     };
 
     #[inline]

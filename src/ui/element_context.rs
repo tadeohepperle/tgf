@@ -226,7 +226,7 @@ pub enum HotState<T: std::fmt::Debug + Clone + Copy + PartialEq> {
     Active(T),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct InteractionState {
     pub hot_active: HotActive,
     pub just_started_click: bool,

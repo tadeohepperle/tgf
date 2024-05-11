@@ -25,6 +25,11 @@ pub fn center_offset(idx: usize, total: usize) -> f32 {
 }
 
 #[inline(always)]
+pub fn center_offset_f64(idx: usize, total: usize) -> f64 {
+    (idx as f64) - ((total as f64) - 1.0) / 2.0
+}
+
+#[inline(always)]
 pub fn center_offset_f(idx_f: f32, total_f: f32) -> f32 {
     (idx_f) - ((total_f) - 1.0) / 2.0
 }

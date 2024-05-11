@@ -1,4 +1,4 @@
-use std::{fmt::Debug};
+use std::fmt::Debug;
 
 use crate::{BindableTexture, Time, Transform};
 

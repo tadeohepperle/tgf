@@ -1,6 +1,6 @@
 use crate::{
     make_shader_source, rgba_bind_group_layout_cached, uniforms::Uniforms, Color, HotReload,
-    ShaderCache, ShaderSource, VertexT, VertsLayout,
+    RenderFormat, ShaderCache, ShaderSource, VertexT, VertsLayout,
 };
 
 use wgpu::{PushConstantRange, RenderPipelineDescriptor, ShaderStages, TextureView, VertexState};
@@ -17,22 +17,29 @@ pub struct UiScreenRenderer {
     textured_rect_pipeline: wgpu::RenderPipeline,
     alpha_sdf_rect_pipeline: wgpu::RenderPipeline,
     glyph_pipeline: wgpu::RenderPipeline,
+    render_format: RenderFormat,
 }
 
 impl UiScreenRenderer {
     /// The shader source should include `ui.wgsl` and `alpha_sdf.wgsl`.
-    pub fn new(device: &wgpu::Device, shader_cache: &mut ShaderCache) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        shader_cache: &mut ShaderCache,
+        render_format: RenderFormat,
+    ) -> Self {
         let shader = shader_cache.register(SHADER_SOURCE, device);
-        let glyph_pipeline = create_glyph_pipeline(&shader, device);
-        let rect_pipeline = create_rect_pipeline(&shader, device);
-        let textured_rect_pipeline = create_textured_rect_pipeline(&shader, device);
-        let alpha_sdf_rect_pipeline = create_alpha_sdf_rect_pipeline(&shader, device);
+        let glyph_pipeline = create_glyph_pipeline(&shader, device, render_format);
+        let rect_pipeline = create_rect_pipeline(&shader, device, render_format);
+        let textured_rect_pipeline = create_textured_rect_pipeline(&shader, device, render_format);
+        let alpha_sdf_rect_pipeline =
+            create_alpha_sdf_rect_pipeline(&shader, device, render_format);
 
         UiScreenRenderer {
             rect_pipeline,
             textured_rect_pipeline,
             alpha_sdf_rect_pipeline,
             glyph_pipeline,
+            render_format,
         }
     }
 
@@ -146,16 +153,19 @@ impl HotReload for UiScreenRenderer {
     }
 
     fn hot_reload(&mut self, shader: &wgpu::ShaderModule, device: &wgpu::Device) {
-        self.glyph_pipeline = create_glyph_pipeline(&shader, device);
-        self.rect_pipeline = create_rect_pipeline(&shader, device);
-        self.textured_rect_pipeline = create_textured_rect_pipeline(&shader, device);
-        self.alpha_sdf_rect_pipeline = create_alpha_sdf_rect_pipeline(&shader, device);
+        self.glyph_pipeline = create_glyph_pipeline(&shader, device, self.render_format);
+        self.rect_pipeline = create_rect_pipeline(&shader, device, self.render_format);
+        self.textured_rect_pipeline =
+            create_textured_rect_pipeline(&shader, device, self.render_format);
+        self.alpha_sdf_rect_pipeline =
+            create_alpha_sdf_rect_pipeline(&shader, device, self.render_format);
     }
 }
 
 fn create_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
+    render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<RectRaw>(
         shader_module,
@@ -163,12 +173,14 @@ fn create_rect_pipeline(
         "rect_fs",
         device,
         &[Uniforms::cached_layout()],
+        render_format,
     )
 }
 
 fn create_textured_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
+    render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<TexturedRectRaw>(
         shader_module,
@@ -179,12 +191,14 @@ fn create_textured_rect_pipeline(
             Uniforms::cached_layout(),
             rgba_bind_group_layout_cached(device),
         ],
+        render_format,
     )
 }
 
 fn create_alpha_sdf_rect_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
+    render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<AlphaSdfRectRaw>(
         shader_module,
@@ -195,12 +209,14 @@ fn create_alpha_sdf_rect_pipeline(
             Uniforms::cached_layout(),
             rgba_bind_group_layout_cached(device),
         ],
+        render_format,
     )
 }
 
 fn create_glyph_pipeline(
     shader_module: &wgpu::ShaderModule,
     device: &wgpu::Device,
+    render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     create_pipeline::<GlyphRaw>(
         shader_module,
@@ -211,6 +227,7 @@ fn create_glyph_pipeline(
             Uniforms::cached_layout(),
             rgba_bind_group_layout_cached(device),
         ],
+        render_format,
     )
 }
 
@@ -220,6 +237,7 @@ pub fn create_pipeline<Instance: VertexT>(
     fs_entry: &str,
     device: &wgpu::Device,
     bind_group_layouts: &[&wgpu::BindGroupLayout],
+    render_format: RenderFormat,
 ) -> wgpu::RenderPipeline {
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(std::any::type_name::<Instance>()),
@@ -244,7 +262,7 @@ pub fn create_pipeline<Instance: VertexT>(
             module: shader,
             entry_point: fs_entry,
             targets: &[Some(wgpu::ColorTargetState {
-                format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                format: render_format.color,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
