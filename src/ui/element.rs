@@ -234,6 +234,7 @@ impl DivStyle {
         self.texture = DivTexture::AlphaSdfTexture(SdfTextureRegion { region, params });
     }
 
+    #[inline(always)]
     pub fn size(&mut self, w: u32, h: u32) {
         self.width = Some(Len::Px(w as f64));
         self.height = Some(Len::Px(h as f64));

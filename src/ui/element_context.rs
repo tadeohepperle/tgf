@@ -21,18 +21,14 @@ pub struct ElementContext {
     // a `StoredElement::set_position()` pass. That means, that children, come first, then their parents. Explicit z index is not regarded here...
     // To find the first element hit by a mouse cursor, search from front to back.
     id_bounds: Vec<(ElementId, ComputedBounds)>,
-    hot_state: HotState<ElementId>,
-    just_started_click: Option<ElementId>,
-    just_ended_click: Option<ElementId>,
+    interaction_state: InteractionState<ElementId>,
 }
 
 impl ElementContext {
     pub fn new() -> Self {
         ElementContext {
             id_bounds: vec![],
-            hot_state: HotState::None,
-            just_started_click: None,
-            just_ended_click: None,
+            interaction_state: InteractionState::default(),
         }
     }
 
@@ -43,16 +39,16 @@ impl ElementContext {
 
     #[inline(always)]
     pub fn hot_state(&self) -> HotState<ElementId> {
-        self.hot_state
+        self.interaction_state.hot_state
     }
 
     #[inline(always)]
-    pub fn state(&self, id: ElementId) -> InteractionState {
-        InteractionState {
-            hot_active: self.hot_state.hot_active(id),
-            just_started_click: self.just_started_click == Some(id),
-            just_ended_click: self.just_ended_click == Some(id),
-        }
+    pub fn state(&self) -> InteractionState<ElementId> {
+        self.interaction_state
+    }
+    #[inline(always)]
+    pub fn state_of(&self, id: ElementId) -> Interaction {
+        self.interaction_state.of(id)
     }
 
     #[inline(always)]
@@ -72,14 +68,7 @@ impl ElementContext {
         // find element hovered:
         let hovered = self.hovered_element(&cursor_pos);
         let left_mouse_down = mouse.left().pressed();
-        self.just_started_click = None;
-        self.just_ended_click = None;
-        self.hot_state.transition(
-            hovered,
-            left_mouse_down,
-            &mut self.just_started_click,
-            &mut self.just_ended_click,
-        );
+        self.interaction_state.transition(hovered, left_mouse_down);
     }
 
     pub fn hovered_element(&self, cursor_pos: &DVec2) -> Option<ElementId> {
@@ -227,10 +216,54 @@ pub enum HotState<T: std::fmt::Debug + Clone + Copy + PartialEq> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-pub struct InteractionState {
+pub struct Interaction {
     pub hot_active: HotActive,
+    pub hovered: bool,
     pub just_started_click: bool,
     pub just_ended_click: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InteractionState<T: std::fmt::Debug + Clone + Copy + PartialEq> {
+    pub hot_state: HotState<T>,
+    pub hovered: Option<T>,
+    pub just_started_click: Option<T>,
+    pub just_ended_click: Option<T>,
+}
+
+impl<T: std::fmt::Debug + Clone + Copy + PartialEq> InteractionState<T> {
+    pub fn transition(&mut self, hovered: Option<T>, mouse_down: bool) {
+        self.hovered = hovered;
+        self.just_started_click = None;
+        self.just_ended_click = None;
+        self.hot_state.transition(
+            hovered,
+            mouse_down,
+            &mut self.just_started_click,
+            &mut self.just_ended_click,
+        )
+    }
+
+    #[inline(always)]
+    pub fn of(&self, id: T) -> Interaction {
+        Interaction {
+            hot_active: self.hot_state.hot_active(id),
+            just_started_click: self.just_started_click == Some(id),
+            just_ended_click: self.just_ended_click == Some(id),
+            hovered: self.hovered == Some(id),
+        }
+    }
+}
+
+impl<T: std::fmt::Debug + Clone + Copy + PartialEq> Default for InteractionState<T> {
+    fn default() -> Self {
+        Self {
+            hot_state: HotState::None,
+            hovered: None,
+            just_started_click: None,
+            just_ended_click: None,
+        }
+    }
 }
 
 impl<T: std::fmt::Debug + Clone + Copy + PartialEq> HotState<T> {

@@ -164,7 +164,9 @@ pub fn create_window_and_event_loop(config: WindowConfig) -> (Window, EventLoop<
     let mut window = WindowBuilder::new()
         .with_visible(true)
         .with_title(config.window_name)
-        .with_base_size(size);
+        .with_inner_size(size)
+        .with_resizable(true); //
+                               // .with_base_size(size)
 
     if let Some(monitor) = config.fullscreen {
         let monitor = select_monitor(&event_loop, monitor);

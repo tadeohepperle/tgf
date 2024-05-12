@@ -47,7 +47,7 @@ pub use renderer::{
     RenderFormat,
 };
 
-pub use ui::element_context::{ElementContext, InteractionState, HotActive, HotState};
+pub use ui::element_context::{ElementContext, HotActive, HotState, Interaction};
 
 pub use app::{AppT, Runner, RunnerCallbacks, WindowConfig};
 pub use asset::{AssetSource, AssetT, LoadingAsset};
