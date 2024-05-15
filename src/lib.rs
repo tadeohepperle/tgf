@@ -50,7 +50,7 @@ pub use renderer::{
 pub use ui::element_context::{ElementContext, HotActive, HotState, Interaction};
 
 pub use app::{AppT, Runner, RunnerCallbacks, WindowConfig};
-pub use asset::{AssetSource, AssetT, LoadingAsset};
+pub use asset::AssetT;
 pub use bucket_array::BucketArray;
 pub use buffer::{GrowableBuffer, IndexBuffer, InstanceBuffer, ToRaw, UniformBuffer, VertexBuffer};
 pub use camera3d::{Camera3DTransform, Camera3d, Camera3dGR, Camera3dRaw, Projection, Ray};
@@ -83,9 +83,8 @@ pub mod ext {
     pub use bytemuck;
     pub use glam;
     pub use image;
-    pub use slotmap;
+    pub use pollster;
     pub use smallvec;
-    pub use tokio;
     pub use wgpu;
     pub use winit;
 }

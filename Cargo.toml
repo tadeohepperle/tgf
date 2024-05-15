@@ -19,19 +19,17 @@ egui = { version = "0.27.2", optional = true }
 egui-wgpu = { version = "0.27.2", optional = true }
 etagere = "0.2.10"
 fontdue = "0.8.0"
-glam = { version = "0.27.0", features = ["serde", "bytemuck", "rand"] }
 image = "0.24.7"
 log = "0.4.21"
 notify = "6.1.1"
-reqwest = "0.12.2"
 sdfer = { version = "0.2.1", features = ["image"] }
-slotmap = { package = "slotmap-map", version = "1.0.7", features = ["serde"] }
 smallvec = "1.13.2"
-tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread", "sync", "time", "fs"] }
 wgpu = { version = "0.19.3", features = ["naga"] }
 winit = "0.29.15"
 tgf-macros = { path = "./macros", version = "0.0.2" }
 simple-easing = "1.0.1"
+pollster = "0.3.0"
+glam = { version = "0.27.0", features = ["serde", "bytemuck", "rand"] }
 
 [dev-dependencies]
 rand = "0.8.5"

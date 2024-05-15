@@ -6,7 +6,6 @@ use std::{
 use wgpu::SurfaceConfiguration;
 use winit::{dpi::PhysicalSize, window::Window};
 
-
 #[derive(Debug, Clone)]
 pub struct GraphicsContext(Arc<GraphicsContextInner>);
 
@@ -52,13 +51,9 @@ impl Default for GraphicsContextConfig {
 }
 
 impl GraphicsContext {
-    pub fn new(
-        config: GraphicsContextConfig,
-        rt: &tokio::runtime::Runtime,
-        window: &Window,
-    ) -> anyhow::Result<Self> {
+    pub fn new(config: GraphicsContextConfig, window: &Window) -> anyhow::Result<Self> {
         let graphics_context =
-            rt.block_on(async move { new_graphics_context(config, window).await })?;
+            pollster::block_on(async move { new_graphics_context(config, window).await })?;
         Ok(graphics_context)
     }
 

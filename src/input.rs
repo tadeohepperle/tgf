@@ -265,6 +265,16 @@ impl Input {
         v
     }
 
+    pub fn arrow_just_left_right(&self) -> i32 {
+        if self.keys.just_pressed(KeyCode::ArrowLeft) {
+            -1
+        } else if self.keys.just_pressed(KeyCode::ArrowRight) {
+            1
+        } else {
+            0
+        }
+    }
+
     pub fn arrow_vec(&self) -> glam::Vec2 {
         let mut v = Vec2::ZERO;
         if self.keys.is_pressed(KeyCode::ArrowUp) {

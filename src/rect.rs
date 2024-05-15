@@ -175,6 +175,17 @@ impl Aabb {
         }
     }
 
+    pub fn standard_form(&self) -> Aabb {
+        let mut r = *self;
+        if r.max.x < r.min.x {
+            std::mem::swap(&mut r.max.x, &mut r.min.x);
+        }
+        if r.max.y < r.min.y {
+            std::mem::swap(&mut r.max.y, &mut r.min.y);
+        }
+        r
+    }
+
     pub fn overlap_area(&self, other: &Aabb) -> f32 {
         let width_overlap = self.max.x.min(other.max.x) - self.min.x.max(other.min.x);
         let height_overlap = self.max.y.min(other.max.y) - self.min.y.max(other.min.y);

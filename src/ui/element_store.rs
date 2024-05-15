@@ -1,6 +1,4 @@
 use std::{
-    cell::UnsafeCell,
-    collections::hash_map::Entry,
     fmt::Debug,
     ops::{Deref, DerefMut},
 };

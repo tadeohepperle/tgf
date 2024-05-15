@@ -25,7 +25,6 @@ pub fn main() {
 /// We could have put it into the examples, but sometimes you might just want to drop in the DefaultWorld to get things going quickly.
 pub struct DefaultWorld {
     pub window: Arc<Window>,
-    pub rt: tokio::runtime::Runtime,
     pub ctx: GraphicsContext,
     pub shader_cache: ShaderCache,
     pub time: Time,
@@ -65,8 +64,7 @@ impl AppT for DefaultWorld {
 
 impl DefaultWorld {
     pub fn new(window: Arc<Window>) -> Self {
-        let rt = tokio::runtime::Builder::new_multi_thread().build().unwrap();
-        let ctx = GraphicsContext::new(Default::default(), &rt, &window).unwrap();
+        let ctx = GraphicsContext::new(Default::default(), &window).unwrap();
         let mut shader_cache = ShaderCache::new(Some("./hotreload"));
 
         let mut camera = Camera3d::new(window.inner_size().width, window.inner_size().height);
@@ -109,7 +107,6 @@ impl DefaultWorld {
 
         Self {
             window,
-            rt,
             ctx,
             shader_cache,
             time,
