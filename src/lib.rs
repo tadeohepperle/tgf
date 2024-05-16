@@ -31,8 +31,6 @@ pub mod watcher;
 pub mod yolo;
 
 #[cfg(feature = "eguimod")]
-pub use egui;
-#[cfg(feature = "eguimod")]
 pub use renderer::egui::Egui;
 #[cfg(feature = "eguimod")]
 pub use utils::global_values::{global_vals_get, global_vals_window};
@@ -78,6 +76,9 @@ pub use winit::{dpi::PhysicalSize, event::WindowEvent, keyboard::KeyCode, window
 pub use yolo::{YoloCell, YoloRc};
 
 pub mod ext {
+    #[cfg(feature = "eguimod")]
+    pub use egui;
+
     pub use ahash;
     pub use anyhow;
     pub use bytemuck;

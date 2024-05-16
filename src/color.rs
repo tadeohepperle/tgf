@@ -4,9 +4,21 @@ use glam::{Vec3, Vec4};
 
 use super::lerp::Lerp;
 
+use serde::{Deserialize, Serialize};
+
 /// An SRGB color.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, PartialEq, bytemuck::Pod, bytemuck::Zeroable, Default)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    bytemuck::Pod,
+    bytemuck::Zeroable,
+    Default,
+    Serialize,
+    Deserialize,
+)]
 pub struct Color {
     /// Red
     pub r: f32,
@@ -205,7 +217,7 @@ impl Add<f32> for Color {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Hsv {
     pub hue: f64,
     pub saturation: f64,

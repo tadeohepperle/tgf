@@ -5,8 +5,8 @@ use std::ops::Range;
 use egui::Checkbox;
 use glam::Vec3;
 
-use crate::egui::Context;
-use crate::egui::{self, Slider};
+use crate::ext::egui::Context;
+use crate::ext::egui::{self, Slider};
 use crate::Color;
 
 use crate::YoloCell;
