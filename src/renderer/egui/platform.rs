@@ -84,6 +84,10 @@ impl Platform {
         }
     }
 
+    pub fn set_pixels_per_point(&mut self, pixels_per_point: f32) {
+        self.pixels_per_point = pixels_per_point;
+    }
+
     pub fn screen_descriptor(&self) -> ScreenDescriptor {
         ScreenDescriptor {
             size_in_pixels: [self.physical_size.width, self.physical_size.height],
@@ -112,8 +116,7 @@ impl Platform {
                 scale_factor,
                 inner_size_writer: _,
             } => {
-                self.pixels_per_point = 1.0 / *scale_factor as f32;
-
+                // self.pixels_per_point = 1.0 / *scale_factor as f32;
                 self.raw_input.screen_rect =
                     Some(screen_rect(self.physical_size, self.pixels_per_point));
             }

@@ -41,7 +41,7 @@ impl Egui {
 
         let platform = Platform::new(PlatformDescriptor {
             physical_size: window.inner_size(),
-            pixels_per_point: 1.0 / window.scale_factor() as f32, // ??? is this updated properly?
+            pixels_per_point: 1.0, // 1.0 / window.scale_factor() as f32, // ??? is this updated properly?
             font_definitions: Default::default(),
             style: Default::default(),
         });
@@ -55,6 +55,10 @@ impl Egui {
             paint_jobs: Vec::new(),
             start_time: Instant::now(),
         }
+    }
+
+    pub fn set_pixels_per_point(&mut self, pixels_per_point: f32) {
+        self.platform.set_pixels_per_point(pixels_per_point);
     }
 
     pub fn context(&self) -> egui::Context {
