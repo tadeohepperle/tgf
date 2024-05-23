@@ -154,7 +154,7 @@ impl SdfFont {
 
         // rasterize all the letters in the given alphabet, currently do not support any other letters:
         const ALPHABET: &str =
-          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!:;/?|(){}[]!+-_=* \n\t'\"><";
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!:;/?|(){}[]!+-_=* \n\t'\"><~`";
         for ch in ALPHABET.chars() {
             sdf_font.add_char(ch);
         }

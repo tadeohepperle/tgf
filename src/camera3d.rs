@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use glam::{vec2, vec3, Mat4, Quat, Vec2, Vec3};
+use glam::{vec2, vec3, Mat4, Quat, Vec2, Vec3, Vec4Swizzles};
 use winit::dpi::PhysicalSize;
 
 use crate::{GraphicsContext, Lerp, ToRaw};
@@ -76,6 +76,16 @@ impl Camera3d {
             transform,
             projection,
         }
+    }
+
+    /// Note: probably a bit redundant and not efficient with the matrix muls into ndc coords and remul later,
+    /// but gets the job done.
+    /// Returns the px_coords on the screen where a world point is projected.
+    pub fn project_world_pos_to_screen_pos(&self, world_pos: Vec3) -> Vec2 {
+        let view_proj = self.projection.calc_matrix() * self.transform.calc_matrix();
+        let projected = view_proj * world_pos.extend(1.0);
+        let xy_0_to_1 = (vec2(projected.x, -projected.y) + 1.0) / 2.0;
+        xy_0_to_1 * vec2(self.projection.width as f32, self.projection.height as f32)
     }
 
     pub fn ray_from_screen_pos(&self, mut screen_pos: Vec2) -> Ray {
@@ -330,7 +340,7 @@ impl Camera3dRaw {
 
     fn update_view_proj(&mut self, camera: &Camera3DTransform, projection: &Projection) {
         // homogenous position:
-        self.view_position = camera.position().extend(1.0).into();
+        self.view_position = camera.pos.extend(1.0).into();
         self.view_proj = (projection.calc_matrix() * camera.calc_matrix()).to_cols_array_2d();
     }
 }

@@ -71,6 +71,10 @@ impl Color {
         self.lerp(&other, factor)
     }
 
+    pub fn max_rgb(&self) -> f32 {
+        self.r.max(self.g.max(self.b))
+    }
+
     /// Converts values in HSV color space to RGB
     ///
     /// * hue: f64 - the position of the color on the color wheel. Between 0 and 360
@@ -213,6 +217,20 @@ impl Add<f32> for Color {
             g: self.g + rhs,
             b: self.b + rhs,
             a: self.a,
+        }
+    }
+}
+
+impl Add for Color {
+    type Output = Color;
+
+    #[inline]
+    fn add(self, rhs: Color) -> Self::Output {
+        Self {
+            r: self.r + rhs.r,
+            g: self.g + rhs.g,
+            b: self.b + rhs.b,
+            a: self.a + rhs.a,
         }
     }
 }

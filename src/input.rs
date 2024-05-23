@@ -1,4 +1,8 @@
-use std::{fmt::Debug, ops::Index, path::PathBuf};
+use std::{
+    fmt::Debug,
+    ops::{BitOr, Index},
+    path::PathBuf,
+};
 
 use glam::{vec2, Vec2};
 use smallvec::SmallVec;
@@ -418,13 +422,22 @@ pub enum MouseButton {
     Forward = 4,
 }
 
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PressState {
-    JustPressed,
-    Pressed,
-    JustReleased,
     #[default]
-    Released,
+    Released = 0,
+    Pressed = 1,
+    JustPressed = 2,
+    JustReleased = 3,
+}
+
+impl BitOr for PressState {
+    type Output = PressState;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        unsafe { std::mem::transmute((self as u8).max(rhs as u8)) }
+    }
 }
 
 impl PressState {
