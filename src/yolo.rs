@@ -19,6 +19,10 @@ impl<T> YoloCell<T> {
     pub const fn new(value: T) -> Self {
         Self(UnsafeCell::new(value))
     }
+
+    pub fn into_inner(self) -> T {
+        self.0.into_inner()
+    }
 }
 
 impl<T> Deref for YoloCell<T> {
