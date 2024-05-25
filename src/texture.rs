@@ -8,6 +8,8 @@ use wgpu::{BindGroupDescriptor, BindGroupLayout};
 
 use crate::GraphicsContext;
 
+pub type BindableTextureRef = &'static BindableTexture;
+
 #[derive(Debug)]
 pub struct BindableTexture {
     pub texture: Texture,

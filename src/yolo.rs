@@ -67,3 +67,11 @@ impl<T> DerefMut for YoloRc<T> {
         self.0.get_mut()
     }
 }
+
+pub fn extend_lifetime<T>(e: &T) -> &'static T {
+    unsafe { &*(e as *const T) }
+}
+
+pub fn leak<T>(e: T) -> &'static mut T {
+    Box::leak(Box::new(e))
+}

@@ -10,6 +10,8 @@ use image::GenericImage;
 use sdfer::{Image2d, Unorm8};
 use wgpu::Extent3d;
 
+pub type SdfFontRef = &'static SdfFont;
+
 /// An SdfFont is meant to be created once with all the characters that you need.
 /// A
 pub struct SdfFont {

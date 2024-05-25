@@ -3,6 +3,7 @@ use std::{ops::DerefMut, sync::Arc};
 
 use std::rc::Rc;
 
+use crate::texture::BindableTextureRef;
 use crate::{Aabb, AlphaSdfParams, BindableTexture, Color};
 
 use glam::{vec2, DVec2, Vec2};
@@ -16,6 +17,7 @@ use crate::ui::{
 };
 
 use super::element_store::StoredElement;
+use super::font::SdfFontRef;
 
 #[repr(C)]
 pub enum Element {
@@ -263,7 +265,7 @@ pub struct SdfTextureRegion {
 
 #[derive(Debug, Clone)]
 pub struct TextureRegion {
-    pub texture: Rc<BindableTexture>,
+    pub texture: BindableTextureRef,
     pub uv: Aabb,
 }
 
@@ -537,7 +539,7 @@ impl From<Rc<str>> for UiString {
 #[derive(Debug, Clone)]
 pub struct TextSection {
     pub string: UiString,
-    pub font: Rc<SdfFont>,
+    pub font: SdfFontRef,
     pub color: Color,
     pub font_size: f32,
     pub shadow_intensity: f32,

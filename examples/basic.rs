@@ -3,9 +3,9 @@ use std::{rc::Rc, sync::Arc};
 use glam::{Quat, Vec2, Vec3};
 use rand::{thread_rng, Rng};
 use tgf::{
-    edit,
+    edit, leak,
     renderer::screen_textures,
-    ui::{div, Align, IntoElementBox, SdfFont, TextSection},
+    ui::{div, font::SdfFontRef, Align, IntoElementBox, SdfFont, TextSection},
     utils::camera_controllers::FlyCamController,
     AppT, Bloom, Camera3d, Camera3dGR, Color, ColorMeshRenderer, DefaultWorld, Egui, Gizmos,
     GraphicsContext, Input, KeyCode, Lerp, RenderFormat, Runner, Screen, ScreenGR, ScreenTextures,
@@ -22,7 +22,7 @@ pub fn main() {
 struct App {
     world: DefaultWorld,
     some_cubes: Vec<Cube>,
-    font: Rc<SdfFont>,
+    font: SdfFontRef,
 }
 
 impl AppT for App {
@@ -50,7 +50,7 @@ impl App {
         Self {
             world,
             some_cubes,
-            font: Rc::new(font),
+            font: leak(font),
         }
     }
 
@@ -73,7 +73,7 @@ impl App {
                 })
                 .child(TextSection {
                     string: "Move with WASD. Turn with arrow keys.".into(),
-                    font: self.font.clone(),
+                    font: self.font,
                     color: Color::WHITE,
                     font_size,
                     shadow_intensity,

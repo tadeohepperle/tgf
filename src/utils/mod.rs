@@ -39,6 +39,10 @@ pub fn rc_addr_as_u64<T>(rc: &Rc<T>) -> u64 {
     unsafe { *ptr_to_rc }
 }
 
+pub fn addr_as_u64<T>(ptr: &T) -> u64 {
+    ptr as *const T as u64
+}
+
 pub fn arc_addr_as_u64<T>(arc: &Arc<T>) -> u64 {
     let ptr_to_rc = arc as *const Arc<T> as *const u64;
     unsafe { *ptr_to_rc }

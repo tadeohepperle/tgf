@@ -1,7 +1,8 @@
 use std::rc::Rc;
 
 use crate::{
-    renderer::sdf_sprite::AlphaSdfParams, Aabb, BindableTexture, Color, GrowableBuffer, VertexT,
+    renderer::sdf_sprite::AlphaSdfParams, texture::BindableTextureRef, utils::addr_as_u64, Aabb,
+    BindableTexture, Color, GrowableBuffer, VertexT,
 };
 use wgpu::BufferUsages;
 
@@ -12,6 +13,8 @@ use crate::ui::{
 };
 
 use crate::utils::rc_addr_as_u64;
+
+use super::font::SdfFontRef;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
@@ -130,9 +133,9 @@ pub struct Batch {
 #[derive(Debug)]
 pub enum BatchKind {
     Rect,
-    TexturedRect(Rc<BindableTexture>),
-    AlphaSdfRect(Rc<BindableTexture>),
-    Glyph(Rc<SdfFont>),
+    TexturedRect(BindableTextureRef),
+    AlphaSdfRect(BindableTextureRef),
+    Glyph(SdfFontRef),
 }
 
 #[derive(Debug, Default)]
@@ -155,10 +158,10 @@ impl<'a> PrimElement<'a> {
     fn batch_key(&self) -> u64 {
         match self {
             PrimElement::Rect(_) => 0,
-            PrimElement::TexturedRect(_, texture) => rc_addr_as_u64(&texture.texture),
-            PrimElement::Text(text, _) => rc_addr_as_u64(&text.font),
+            PrimElement::TexturedRect(_, texture) => addr_as_u64(&texture.texture),
+            PrimElement::Text(text, _) => addr_as_u64(text.font),
             PrimElement::AlphaSdfRect(_, sdf_texture) => {
-                rc_addr_as_u64(&sdf_texture.region.texture) ^ 21891209983212317
+                addr_as_u64(&sdf_texture.region.texture) ^ 21891209983212317
                 // this is such that we do not confuse a key for a AlphaSdfRect with a key for a TexturedRect
             }
         }
@@ -332,17 +335,17 @@ pub fn get_batches(elements: &[&ElementWithComputed]) -> ElementBatches {
                 PrimElement::TexturedRect(_, texture) => Batch {
                     key,
                     range: textured_rects.len()..textured_rects.len(),
-                    kind: BatchKind::TexturedRect(texture.texture.clone()),
+                    kind: BatchKind::TexturedRect(texture.texture),
                 },
                 PrimElement::AlphaSdfRect(_, sdf_texture) => Batch {
                     key,
                     range: alpha_sdf_rects.len()..alpha_sdf_rects.len(),
-                    kind: BatchKind::AlphaSdfRect(sdf_texture.region.texture.clone()),
+                    kind: BatchKind::AlphaSdfRect(sdf_texture.region.texture),
                 },
                 PrimElement::Text(section, _) => Batch {
                     key,
                     range: glyphs.len()..glyphs.len(),
-                    kind: BatchKind::Glyph(section.font.clone()),
+                    kind: BatchKind::Glyph(section.font),
                 },
             };
             batches.push(batch);

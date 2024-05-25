@@ -73,7 +73,7 @@ pub use uniforms::Uniforms;
 pub use vertex::{VertexT, VertsLayout};
 pub use watcher::FileChangeWatcher;
 pub use winit::{dpi::PhysicalSize, event::WindowEvent, keyboard::KeyCode, window::Window};
-pub use yolo::{YoloCell, YoloRc};
+pub use yolo::{extend_lifetime, leak, YoloCell, YoloRc};
 
 pub mod ext {
     #[cfg(feature = "eguimod")]
