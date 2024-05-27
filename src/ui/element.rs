@@ -263,7 +263,7 @@ pub struct SdfTextureRegion {
     pub params: AlphaSdfParams,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct TextureRegion {
     pub texture: BindableTextureRef,
     pub uv: Aabb,
