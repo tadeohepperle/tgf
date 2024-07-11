@@ -1,8 +1,6 @@
-
 use crate::{
-    make_shader_source, rgba_bind_group_layout_cached,
-    uniforms::Uniforms,
-    HdrTexture, HotReload, ShaderCache, ShaderSource,
+    make_shader_source, rgba_bind_group_layout_cached, uniforms::Uniforms, HdrTexture, HotReload,
+    ShaderCache, ShaderSource,
 };
 use wgpu::{BlendComponent, BlendFactor, BlendOperation, BlendState};
 use winit::dpi::PhysicalSize;

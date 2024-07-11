@@ -1,16 +1,15 @@
 use crate::Lerp;
-use smallvec::SmallVec;
 
 #[derive(Debug, Clone)]
 pub struct KeyFrames<T: Clone + Lerp> {
     /// for each point in time, the value T, that should be held at that time.
     /// Should contain values from 0.0 to 1.0
     /// ascending, e.g. 0.0 : -5.0, 0.1 : 7.0, 1.0
-    pub frames: SmallVec<[(f32, T, Easing); 4]>,
+    pub frames: Vec<(f32, T, Easing)>,
 }
 
 impl<T: Clone + Lerp> KeyFrames<T> {
-    pub fn new(frames: SmallVec<[(f32, T, Easing); 4]>) -> Self {
+    pub fn new(frames: Vec<(f32, T, Easing)>) -> Self {
         assert!(!frames.is_empty());
         let is_sorted = frames.is_sorted_by(|a, b| a.0 < b.0);
         assert!(is_sorted);
@@ -27,9 +26,7 @@ impl<T: Clone + Lerp> KeyFrames<T> {
     }
 
     pub fn new_empty() -> Self {
-        Self {
-            frames: SmallVec::new(),
-        }
+        Self { frames: Vec::new() }
     }
 
     pub fn normalize_time(mut self) -> Self {
@@ -84,7 +81,7 @@ macro_rules! key_frames {
     ($($t:expr => $v:expr),+) => {
       {
         use $crate::key_frames::{Easing, KeyFrames};
-        let frames = smallvec::smallvec![$(($t, $v, Easing::Linear )),+];
+        let frames = vec![$(($t, $v, Easing::Linear )),+];
         KeyFrames::new(frames)
       }
     };

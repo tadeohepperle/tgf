@@ -120,6 +120,7 @@ impl Aabb {
         Self { min, max }
     }
 
+    #[inline]
     pub fn quad(center: Vec2, size: Vec2) -> Self {
         Self {
             min: center - size / 2.0,
@@ -248,6 +249,22 @@ impl Aabb {
     pub fn aspect_ratio(&self) -> Vec2 {
         let size = self.size();
         vec2(1.0, size.y / size.x)
+    }
+
+    pub fn join(&mut self, other: Aabb) {
+        if other.min.x < self.min.x {
+            self.min.x = other.min.x;
+        }
+        if other.min.y < self.min.y {
+            self.min.y = other.min.y;
+        }
+
+        if other.max.x > self.max.x {
+            self.max.x = other.max.x;
+        }
+        if other.max.y > self.max.y {
+            self.max.y = other.max.y;
+        }
     }
 
     // pub fn flip_y(mut self) -> Self{

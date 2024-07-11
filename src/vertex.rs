@@ -1,5 +1,6 @@
 use std::cell::UnsafeCell;
 
+use glam::{Vec2, Vec3, Vec4};
 use smallvec::{smallvec, SmallVec};
 use wgpu::{VertexAttribute, VertexBufferLayout, VertexStepMode};
 
@@ -90,4 +91,16 @@ struct VertexOrInstance {
 
 pub trait VertexT: 'static + Sized + bytemuck::Pod + bytemuck::Zeroable {
     const ATTRIBUTES: &'static [wgpu::VertexFormat];
+}
+
+impl VertexT for Vec2 {
+    const ATTRIBUTES: &'static [wgpu::VertexFormat] = &[wgpu::VertexFormat::Float32x3];
+}
+
+impl VertexT for Vec3 {
+    const ATTRIBUTES: &'static [wgpu::VertexFormat] = &[wgpu::VertexFormat::Float32x3];
+}
+
+impl VertexT for Vec4 {
+    const ATTRIBUTES: &'static [wgpu::VertexFormat] = &[wgpu::VertexFormat::Float32x4];
 }
