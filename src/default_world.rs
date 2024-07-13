@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     edit,
-    renderer::ui_screen::UiScreenRenderer,
+    renderer::{ui_3d::Ui3DRenderer, ui_screen::UiScreenRenderer},
     ui::{
         batching::ElementBatchesGR, div, Board, ElementContext, IntoElementBox,
         REFERENCE_SCREEN_SIZE_D,

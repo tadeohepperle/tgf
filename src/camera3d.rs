@@ -326,6 +326,8 @@ impl ToRaw for Camera3d {
 pub struct Camera3dRaw {
     view_position: [f32; 4],
     view_proj: [[f32; 4]; 4],
+    view: [[f32; 4]; 4],
+    proj: [[f32; 4]; 4],
 }
 
 impl Camera3dRaw {
@@ -333,6 +335,8 @@ impl Camera3dRaw {
         let mut new = Camera3dRaw {
             view_position: [0.0; 4],
             view_proj: Mat4::IDENTITY.to_cols_array_2d(),
+            view: Mat4::IDENTITY.to_cols_array_2d(),
+            proj: Mat4::IDENTITY.to_cols_array_2d(),
         };
         new.update_view_proj(camera, projection);
         new
@@ -341,6 +345,12 @@ impl Camera3dRaw {
     fn update_view_proj(&mut self, camera: &Camera3DTransform, projection: &Projection) {
         // homogenous position:
         self.view_position = camera.pos.extend(1.0).into();
-        self.view_proj = (projection.calc_matrix() * camera.calc_matrix()).to_cols_array_2d();
+
+        let projection = projection.calc_matrix();
+        let view = camera.calc_matrix();
+
+        self.view_proj = (projection * view).to_cols_array_2d();
+        self.view = view.to_cols_array_2d();
+        self.proj = projection.to_cols_array_2d();
     }
 }
